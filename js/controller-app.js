@@ -7,7 +7,19 @@ const Ctrl = {
   lastSent: { x: 0, y: 0 },
   keys: {},
 
+  cam: { on: false, stream: null, timer: null },
+
+  applyLang() {
+    document.querySelector('#joinScreen p').textContent = T('enterCode');
+    document.getElementById('name').placeholder = T('yourName');
+    document.getElementById('joinBtn').textContent = T('join');
+    const cb = document.getElementById('camBtn');
+    if (cb) cb.textContent = this.cam.on ? T('cameraOn') : T('cameraOff');
+  },
+
   init() {
+    this.applyLang();
+    document.getElementById('camBtn').onclick = () => this.toggleCam();
     const params = new URLSearchParams(location.search);
     const codeEl = document.getElementById('code');
     const nameEl = document.getElementById('name');
@@ -28,10 +40,10 @@ const Ctrl = {
     const code = document.getElementById('code').value.trim().toUpperCase();
     const name = document.getElementById('name').value.trim();
     const err = document.getElementById('joinErr');
-    if (code.length < 3) { err.textContent = 'Enter the room code shown on the TV.'; return; }
+    if (code.length < 3) { err.textContent = T('checkCode'); return; }
     localStorage.setItem('cp-name', name);
     err.textContent = '';
-    document.getElementById('joinBtn').textContent = 'Connecting…';
+    document.getElementById('joinBtn').textContent = T('connecting');
     try {
       this.conn = await Net.join(code, {
         onOpen: (mode) => {
@@ -40,15 +52,15 @@ const Ctrl = {
         onMsg: (m) => this.onMsg(m),
         onClose: () => {
           this.show('joinScreen');
-          document.getElementById('joinBtn').textContent = 'JOIN';
-          document.getElementById('joinErr').textContent = 'Connection lost — join again.';
+          document.getElementById('joinBtn').textContent = T('join');
+          document.getElementById('joinErr').textContent = T('connLost');
           if (window.Ctrl3D) Ctrl3D.stop();
         },
       });
       this.conn.send({ t: 'hello', name });
     } catch (e) {
       err.textContent = e.message;
-      document.getElementById('joinBtn').textContent = 'JOIN';
+      document.getElementById('joinBtn').textContent = T('join');
     }
   },
 
@@ -59,6 +71,8 @@ const Ctrl = {
     switch (m.t) {
       case 'welcome':
         this.me = m;
+        if (m.lang) { I18N.set(m.lang); this.applyLang(); }
+        document.getElementById('waitMsg').innerHTML = T('youreIn');
         const badge = document.getElementById('meBadge');
         badge.style.background = m.color;
         badge.textContent = 'P' + (m.slot + 1);
@@ -67,8 +81,8 @@ const Ctrl = {
         break;
       case 'full':
         this.show('joinScreen');
-        document.getElementById('joinErr').textContent = 'Room is full (8 players max).';
-        document.getElementById('joinBtn').textContent = 'JOIN';
+        document.getElementById('joinErr').textContent = T('roomFull');
+        document.getElementById('joinBtn').textContent = T('join');
         break;
       case 'scene':
         this.setScene(m);
@@ -78,6 +92,10 @@ const Ctrl = {
         break;
       case 'qnew':
         this.quizUpdate(m);
+        break;
+      case 'lang':
+        I18N.set(m.lang);
+        this.applyLang();
         break;
       default:
         if (this.scheme === '3d' && window.Ctrl3D) Ctrl3D.onMsg(m);
@@ -102,7 +120,7 @@ const Ctrl = {
 
     if (m.s === 'wait') {
       this.show('waitScreen');
-      document.querySelector('#waitScreen p').innerHTML = esc(m.msg || 'Look at the big screen.');
+      document.getElementById('waitMsg').innerHTML = esc(m.msg || T('youreIn'));
       return;
     }
     if (m.s === '3d') {
@@ -147,7 +165,7 @@ const Ctrl = {
       this.bindButtons({ once: true });
 
     } else if (m.s === 'draw') {
-      pad.innerHTML = `<div class="pad-msg">Draw: <b style="color:#fff;font-size:16px">${esc(m.word || '')}</b></div>
+      pad.innerHTML = `<div class="pad-msg">${T('drawWord')}: <b style="color:#fff;font-size:16px">${esc(m.word || '')}</b></div>
         <div id="drawWrap">
           <canvas id="drawCanvas"></canvas>
           <div class="draw-tools" id="drawTools"></div>
@@ -264,6 +282,47 @@ const Ctrl = {
       const map = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'ROT', ArrowDown: 'SD', Space: 'HD' };
       if (map[e.code]) this.send({ t: 'btn', b: map[e.code] });
     }
+  },
+
+  // ---------- camera avatar (PlayStation-style player card) ----------
+  async toggleCam() {
+    const btn = document.getElementById('camBtn');
+    if (this.cam.on) {
+      this.cam.on = false;
+      clearInterval(this.cam.timer);
+      if (this.cam.stream) this.cam.stream.getTracks().forEach(t => t.stop());
+      this.cam.stream = null;
+      this.send({ t: 'cam', img: null });
+      btn.classList.remove('on');
+      this.applyLang();
+      return;
+    }
+    try {
+      this.cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 320 } });
+    } catch (e) {
+      btn.textContent = e.name === 'NotAllowedError' ? 'Camera blocked' : 'No camera';
+      return;
+    }
+    const video = document.getElementById('camVideo');
+    video.srcObject = this.cam.stream;
+    await video.play();
+    this.cam.on = true;
+    btn.classList.add('on');
+    this.applyLang();
+    const cvs = document.createElement('canvas');
+    cvs.width = 96; cvs.height = 96;
+    const snap = () => {
+      if (!this.cam.on || !video.videoWidth) return;
+      const c = cvs.getContext('2d');
+      const s = Math.min(video.videoWidth, video.videoHeight);
+      c.save();
+      c.translate(96, 0); c.scale(-1, 1); // mirror like a selfie
+      c.drawImage(video, (video.videoWidth - s) / 2, (video.videoHeight - s) / 2, s, s, 0, 0, 96, 96);
+      c.restore();
+      this.send({ t: 'cam', img: cvs.toDataURL('image/jpeg', 0.55) });
+    };
+    setTimeout(snap, 600);
+    this.cam.timer = setInterval(snap, 4000);
   },
 
   // ---------- drawing (Draw & Guess) ----------

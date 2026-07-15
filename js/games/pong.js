@@ -5,7 +5,7 @@ registerGame({
   CX: 640, CY: 370, R: 300,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick', { msg: 'Slide your paddle left/right along your arc' });
+    G.setScheme(null, 'stick', { msg: T('slidePaddle') });
     const S = this.S = { pads: new Map(), ball: null, speed: 260, deathOrder: [], serveT: 1.5, hist: [] };
     const n = G.players.length;
     G.players.forEach((p, i) => {
@@ -62,13 +62,13 @@ registerGame({
           if (hitPad.lives <= 0) {
             hitPad.alive = false;
             S.deathOrder.push(owner);
-            if (p) G.toast(`${p.name} is out`);
+            if (p) G.toast(T('isOut', p.name));
           }
           this.serve();
           const stillAlive = [...S.pads.entries()].filter(([, pd]) => pd.alive);
           if ((S.pads.size > 1 && stillAlive.length <= 1) || (S.pads.size === 1 && !stillAlive.length)) {
             const rows = [
-              ...stillAlive.map(([pid]) => ({ pid, label: 'last standing' })),
+              ...stillAlive.map(([pid]) => ({ pid, label: T('lastStanding') })),
               ...[...S.deathOrder].reverse().map(pid => ({ pid, label: '' })),
             ];
             G.finish(rows);
@@ -148,9 +148,9 @@ registerGame({
       ctx.globalAlpha = 1;
       Draw2.orb(ctx, S.ball.x, S.ball.y, 11, '#e8f4ff', true);
     } else {
-      Draw2.label(ctx, 'Serving...', this.CX, this.CY, 22, 'rgba(255,255,255,.6)');
+      Draw2.label(ctx, T('serving'), this.CX, this.CY, 22, 'rgba(255,255,255,.6)');
     }
     Draw2.vignette(ctx, G, 0.45);
-    Draw2.label(ctx, 'Ball speed ' + Math.round(S.speed), G.W / 2, 26, 14, 'rgba(255,255,255,.5)');
+    Draw2.label(ctx, T('ballSpeed') + ' ' + Math.round(S.speed), G.W / 2, 26, 14, 'rgba(255,255,255,.5)');
   },
 });

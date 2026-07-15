@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1, TIME: 90,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick', { msg: 'Steer your blob — eat everything smaller than you' });
+    G.setScheme(null, 'stick', { msg: T('steerBlob') });
     const S = this.S = { blobs: new Map(), food: [], t: 0 };
     G.players.forEach((p, i) => {
       const spots = [[160, 160], [1120, 160], [160, 560], [1120, 560], [640, 120], [640, 600], [120, 360], [1160, 360]];
@@ -60,7 +60,7 @@ registerGame({
     }
     if (G.time > this.TIME) {
       const rows = [...S.blobs.entries()].sort((a, b) => b[1].best - a[1].best)
-        .map(([pid, b]) => ({ pid, label: 'size ' + Math.round(b.best) }));
+        .map(([pid, b]) => ({ pid, label: T('size') + ' ' + Math.round(b.best) }));
       G.finish(rows);
     }
   },

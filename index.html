@@ -25,9 +25,18 @@
   </div>
 </div>
 <script src="js/icons.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   document.getElementById('icoTv').innerHTML = ICONS.tv;
   document.getElementById('icoPhone').innerHTML = ICONS.phone;
+  if (I18N.lang === 'ru') {
+    document.querySelector('.tagline').innerHTML = T('tagline') + '<br>16 игр &middot; до 8 игроков &middot; без загрузок и аккаунтов.';
+    const ch = document.querySelectorAll('.choice');
+    ch[0].querySelector('h2').textContent = T('openConsole');
+    ch[0].querySelector('p').textContent = T('openConsoleDesc');
+    ch[1].querySelector('h2').textContent = T('joinPlayer');
+    ch[1].querySelector('p').textContent = T('joinPlayerDesc');
+  }
   // If someone scanned a QR that points at the root with ?room=CODE, send them to the controller.
   const room = new URLSearchParams(location.search).get('room');
   if (room) location.replace('controller.html?room=' + encodeURIComponent(room));

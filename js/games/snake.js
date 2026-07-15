@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1, TIME: 150,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick', { msg: 'Steer your snake with the joystick — push to the edge for a speed boost' });
+    G.setScheme(null, 'stick', { msg: T('steerSnake') });
     const S = this.S = { snakes: new Map(), food: [], pulse: 0 };
     G.players.forEach((p, i) => S.snakes.set(p.pid, this.spawn(G, i)));
     for (let i = 0; i < 45; i++) S.food.push({ x: rand(30, G.W - 30), y: rand(60, G.H - 30), r: 6, hue: irand(0, 3) });
@@ -74,7 +74,7 @@ registerGame({
     if (G.time > this.TIME) {
       const rows = [...S.snakes.entries()]
         .sort((a, b) => b[1].best - a[1].best)
-        .map(([pid, s]) => ({ pid, label: 'length ' + s.best }));
+        .map(([pid, s]) => ({ pid, label: T('length') + ' ' + s.best }));
       G.finish(rows);
     }
   },

@@ -21,7 +21,9 @@
   <div class="ctrl-wait" id="waitScreen">
     <div class="me-badge" id="meBadge">P1</div>
     <h2 id="meName">Player</h2>
-    <p>You're in. Look at the big screen.<br>The host picks the game — your controller will change automatically.</p>
+    <p id="waitMsg">You're in. Look at the big screen.<br>The host picks the game — your controller will change automatically.</p>
+    <button id="camBtn" class="cam-btn">Enable camera avatar</button>
+    <video id="camVideo" playsinline muted style="display:none"></video>
   </div>
 
   <div id="pad"></div>
@@ -35,6 +37,7 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/three.min.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/common.js"></script>
 <script src="js/net.js"></script>
 <script src="js/engine3d.js"></script>

@@ -13,7 +13,10 @@ const E3D = (() => {
     7: { c: 0xb08a4f, name: 'Plank' },
     8: { c: 0xb04a3a, name: 'Brick' },
     9: { c: 0x9fd7e8, name: 'Ice' },
+    10: { c: 0x3d7edb, name: 'Water' },
+    11: { c: 0xf0f4f8, name: 'Snow' },
   };
+  const NON_SOLID = new Set([0, 10]);
   const HOTBAR = [2, 3, 4, 7, 8, 5]; // block ids the player can place
 
   // value noise from seeded PRNG
@@ -43,20 +46,24 @@ const E3D = (() => {
     inBounds(x, y, z) { return x >= 0 && x < this.sx && y >= 0 && y < this.sy && z >= 0 && z < this.sz; }
     get(x, y, z) { return this.inBounds(x, y, z) ? this.data[this.idx(x, y, z)] : 0; }
     set(x, y, z, id) { if (this.inBounds(x, y, z)) this.data[this.idx(x, y, z)] = id; }
-    solid(x, y, z) { return this.get(Math.floor(x), Math.floor(y), Math.floor(z)) !== 0; }
+    solid(x, y, z) { return !NON_SOLID.has(this.get(Math.floor(x), Math.floor(y), Math.floor(z))); }
+    solidId(id) { return !NON_SOLID.has(id); }
 
     generate() {
       const n = noise2(this.seed);
       const rnd = mulberry(this.seed ^ 0x9e3779b9);
+      const WATER = 4;
       for (let x = 0; x < this.sx; x++) for (let z = 0; z < this.sz; z++) {
-        const h = Math.floor(4 + n(x / 9, z / 9) * 8 + n(x / 23, z / 23) * 4);
-        const sandy = h <= 5;
+        const h = Math.floor(2 + n(x / 9, z / 9) * 9 + n(x / 21, z / 21) * 5);
+        const sandy = h <= WATER + 1;
+        const snowy = h >= 13;
         for (let y = 0; y <= h; y++) {
           let id = 3;
-          if (y === h) id = sandy ? 6 : 1;
-          else if (y >= h - 2) id = sandy ? 6 : 2;
+          if (y === h) id = snowy ? 11 : (sandy ? 6 : 1);
+          else if (y >= h - 2) id = sandy ? 6 : (snowy ? 3 : 2);
           this.set(x, y, z, id);
         }
+        for (let y = h + 1; y <= WATER; y++) this.set(x, y, z, 10); // lakes
       }
       // trees
       for (let t = 0; t < 14; t++) {
@@ -64,7 +71,7 @@ const E3D = (() => {
         const z = 3 + Math.floor(rnd() * (this.sz - 6));
         let h = this.sy - 1;
         while (h > 0 && !this.get(x, h, z)) h--;
-        if (this.get(x, h, z) !== 1) continue;
+        if (this.get(x, h, z) !== 1) continue; // grass only: keeps trees off lakes/peaks
         const th = 3 + Math.floor(rnd() * 2);
         for (let y = 1; y <= th; y++) this.set(x, h + y, z, 4);
         for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = 0; dy <= 2; dy++) {
@@ -83,6 +90,7 @@ const E3D = (() => {
     // ---- meshing ----
     buildAll(scene) {
       this.scene = scene;
+      this.waterMeshes = new Map();
       const nc = Math.ceil(this.sx / this.CHUNK);
       for (let cx = 0; cx < nc; cx++) for (let cz = 0; cz < Math.ceil(this.sz / this.CHUNK); cz++) {
         this.rebuildChunk(cx, cz);
@@ -90,16 +98,26 @@ const E3D = (() => {
     }
     rebuildChunk(cx, cz) {
       const key = cx + ',' + cz;
-      const old = this.chunkMeshes.get(key);
-      if (old) { this.scene.remove(old); old.geometry.dispose(); }
-      const geo = this.chunkGeometry(cx, cz);
-      if (!geo) { this.chunkMeshes.delete(key); return; }
-      if (!this.material) this.material = new THREE.MeshLambertMaterial({ vertexColors: true });
-      const mesh = new THREE.Mesh(geo, this.material);
-      this.scene.add(mesh);
-      this.chunkMeshes.set(key, mesh);
+      for (const [map, water] of [[this.chunkMeshes, false], [this.waterMeshes, true]]) {
+        const old = map.get(key);
+        if (old) { this.scene.remove(old); old.geometry.dispose(); }
+        const geo = this.chunkGeometry(cx, cz, water);
+        if (!geo) { map.delete(key); continue; }
+        if (water) {
+          if (!this.waterMat) this.waterMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.72 });
+          const mesh = new THREE.Mesh(geo, this.waterMat);
+          this.scene.add(mesh);
+          map.set(key, mesh);
+        } else {
+          if (!this.material) this.material = new THREE.MeshLambertMaterial({ vertexColors: true });
+          const mesh = new THREE.Mesh(geo, this.material);
+          if (this.shadows) { mesh.castShadow = true; mesh.receiveShadow = true; }
+          this.scene.add(mesh);
+          map.set(key, mesh);
+        }
+      }
     }
-    chunkGeometry(cx, cz) {
+    chunkGeometry(cx, cz, water = false) {
       const C = this.CHUNK;
       const pos = [], nor = [], col = [], idxs = [];
       const FACES = [
@@ -116,12 +134,17 @@ const E3D = (() => {
           for (let y = 0; y < this.sy; y++) {
             const id = this.get(x, y, z);
             if (!id) continue;
+            if (water !== (id === 10)) continue;
             const b = BLOCKS[id];
             for (const f of FACES) {
-              if (this.get(x + f.d[0], y + f.d[1], z + f.d[2])) continue;
+              const nb = this.get(x + f.d[0], y + f.d[1], z + f.d[2]);
+              // solid faces show against air/water; water faces only against air
+              if (water ? nb !== 0 : (nb !== 0 && nb !== 10)) continue;
               const base = pos.length / 3;
               const c = (f.d[1] === 1 && b.top) ? b.top : b.c;
-              color.setHex(c).multiplyScalar(f.sh);
+              // subtle per-block tint variation so large areas don't look flat
+              const jit = 0.93 + (((x * 73856093 ^ y * 19349663 ^ z * 83492791) >>> 0) % 100) / 100 * 0.14;
+              color.setHex(c).multiplyScalar(f.sh * (water ? 1 : jit));
               for (const v of f.v) {
                 pos.push(x + v[0], y + v[1], z + v[2]);
                 nor.push(f.d[0], f.d[1], f.d[2]);
@@ -160,7 +183,8 @@ const E3D = (() => {
         const x = Math.floor(origin.x + dir.x * t);
         const y = Math.floor(origin.y + dir.y * t);
         const z = Math.floor(origin.z + dir.z * t);
-        if (this.get(x, y, z)) return { hit: [x, y, z], prev };
+        const id = this.get(x, y, z);
+        if (id && id !== 10) return { hit: [x, y, z], prev };
         prev = [x, y, z];
       }
       return null;
@@ -177,6 +201,78 @@ const E3D = (() => {
     sun.position.set(30, 60, 20);
     scene.add(sun);
     return scene;
+  }
+
+  function enableShadows(renderer, scene, size = 60) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    scene.traverse(o => { if (o.isDirectionalLight) {
+      o.castShadow = true;
+      o.shadow.mapSize.set(2048, 2048);
+      o.shadow.camera.left = -size; o.shadow.camera.right = size;
+      o.shadow.camera.top = size; o.shadow.camera.bottom = -size;
+      o.shadow.camera.far = 200;
+    } });
+  }
+
+  // slow drifting flat clouds
+  function makeClouds(seed, area = 64, height = 24) {
+    const rnd = mulberry(seed ^ 0x51ca);
+    const group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+    const items = [];
+    for (let i = 0; i < 9; i++) {
+      const cl = new THREE.Group();
+      const blobs = 2 + Math.floor(rnd() * 3);
+      for (let b = 0; b < blobs; b++) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(4 + rnd() * 7, 1, 3 + rnd() * 5), mat);
+        m.position.set((rnd() - 0.5) * 8, rnd() * 0.6, (rnd() - 0.5) * 6);
+        cl.add(m);
+      }
+      cl.position.set(rnd() * area, height + rnd() * 5, rnd() * area);
+      group.add(cl);
+      items.push({ cl, v: 0.6 + rnd() * 0.9 });
+    }
+    return {
+      group,
+      tick(dt) {
+        for (const it of items) {
+          it.cl.position.x += it.v * dt;
+          if (it.cl.position.x > area + 12) it.cl.position.x = -12;
+        }
+      },
+    };
+  }
+
+  // decorative flowers + grass tufts on grass blocks (deterministic from seed)
+  function decorate(world, scene) {
+    const rnd = mulberry(world.seed ^ 0xf10e);
+    const colors = [0xe84a4a, 0xf2d34d, 0xffffff, 0xc86ae0];
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x3f9a45 });
+    for (let i = 0; i < 90; i++) {
+      const x = 1 + Math.floor(rnd() * (world.sx - 2));
+      const z = 1 + Math.floor(rnd() * (world.sz - 2));
+      const y = world.topY(x, z);
+      if (world.get(x, y, z) !== 1) continue;
+      if (rnd() < 0.45) {
+        // flower: stem + colored head
+        const g = new THREE.Group();
+        const stem = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.5, 0.07), stemMat);
+        stem.position.y = 0.25;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.24),
+          new THREE.MeshLambertMaterial({ color: colors[Math.floor(rnd() * 4)] }));
+        head.position.y = 0.55;
+        g.add(stem, head);
+        g.position.set(x + 0.3 + rnd() * 0.4, y + 1, z + 0.3 + rnd() * 0.4);
+        scene.add(g);
+      } else {
+        // grass tuft
+        const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.35, 0.08), stemMat);
+        tuft.position.set(x + 0.3 + rnd() * 0.4, y + 1.17, z + 0.3 + rnd() * 0.4);
+        tuft.rotation.y = rnd() * 3;
+        scene.add(tuft);
+      }
+    }
   }
 
   function makeAvatar(colorHex, name) {
@@ -328,5 +424,5 @@ const E3D = (() => {
     return { onGround, ground };
   }
 
-  return { BLOCKS, HOTBAR, World, makeScene, makeAvatar, moveAABB, obbyCourse, obbyBoxMeshes, obbyTick, moveBoxes };
+  return { BLOCKS, HOTBAR, World, makeScene, makeAvatar, moveAABB, obbyCourse, obbyBoxMeshes, obbyTick, moveBoxes, enableShadows, makeClouds, decorate };
 })();

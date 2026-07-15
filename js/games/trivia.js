@@ -28,29 +28,55 @@ registerGame({
     ['What is H2O better known as?', ['Salt', 'Water', 'Air', 'Acid'], 1],
     ['Which shape has three sides?', ['Square', 'Circle', 'Triangle', 'Hexagon'], 2],
   ],
+  QS_RU: [
+    ['Какая самая большая планета Солнечной системы?', ['Юпитер', 'Сатурн', 'Земля', 'Нептун'], 0],
+    ['Сколько ног у паука?', ['6', '8', '10', '12'], 1],
+    ['Какой цвет получится из синего и жёлтого?', ['Фиолетовый', 'Оранжевый', 'Зелёный', 'Коричневый'], 2],
+    ['Какое животное самое быстрое на суше?', ['Лев', 'Лошадь', 'Гепард', 'Страус'], 2],
+    ['Столица Японии?', ['Сеул', 'Пекин', 'Бангкок', 'Токио'], 3],
+    ['Сколько минут в 2 часах?', ['60', '90', '120', '240'], 2],
+    ['Какой газ вдыхают растения?', ['Кислород', 'CO2', 'Азот', 'Гелий'], 1],
+    ['Какой океан самый большой?', ['Атлантический', 'Индийский', 'Тихий', 'Северный Ледовитый'], 2],
+    ['Что делают криперы в Minecraft?', ['Танцуют', 'Взрываются', 'Летают', 'Поют'], 1],
+    ['Сколько сторон у шестиугольника?', ['5', '6', '7', '8'], 1],
+    ['Какая планета самая горячая?', ['Меркурий', 'Венера', 'Марс', 'Юпитер'], 1],
+    ['Какая страна придумала пиццу?', ['Франция', 'США', 'Италия', 'Греция'], 2],
+    ['Сколько будет 9 x 7?', ['56', '63', '72', '81'], 1],
+    ['Какая птица не умеет летать?', ['Пингвин', 'Орёл', 'Сова', 'Попугай'], 0],
+    ['Какое самое маленькое простое число?', ['0', '1', '2', '3'], 2],
+    ['К какой консоли относится DualSense?', ['Xbox', 'Switch', 'PS5', 'ПК'], 2],
+    ['Сколько на Земле континентов?', ['5', '6', '7', '8'], 2],
+    ['Что делают пчёлы?', ['Молоко', 'Мёд', 'Шёлк', 'Масло'], 1],
+    ['Какая река самая длинная?', ['Амазонка', 'Нил', 'Янцзы', 'Миссисипи'], 1],
+    ['Что тяжелее: 1 кг стали или 1 кг перьев?', ['Сталь', 'Перья', 'Одинаково', 'Зависит'], 2],
+    ['Сколько игроков помещается в комнату CouchPlay?', ['4', '6', '8', '100'], 2],
+    ['Что означает WWW?', ['World Wide Web', 'Wild West World', 'We Want Wifi', 'World War Web'], 0],
+    ['Как ещё называют H2O?', ['Соль', 'Вода', 'Воздух', 'Кислота'], 1],
+    ['У какой фигуры три стороны?', ['Квадрат', 'Круг', 'Треугольник', 'Шестиугольник'], 2],
+  ],
   ROUNDS: 8, QTIME: 12,
   S: null,
   init(G) {
-    const picked = shuffle([...this.QS]).slice(0, this.ROUNDS);
+    const picked = shuffle([...(I18N.lang === 'ru' ? this.QS_RU : this.QS)]).slice(0, this.ROUNDS);
     this.S = {
       qs: picked, qi: -1, phase: 'next', phaseT: 1.5,
       scores: new Map(G.players.map(p => [p.pid, 0])),
       answers: new Map(),
     };
-    G.setScheme(null, 'quiz', { labels: ['', '', '', ''], msg: 'Get ready...' });
+    G.setScheme(null, 'quiz', { labels: ['', '', '', ''], msg: T('getReady') });
   },
   nextQ(G) {
     const S = this.S;
     S.qi++;
     if (S.qi >= S.qs.length) {
-      const rows = [...S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' pts' }));
+      const rows = [...S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' ' + T('pts') }));
       G.finish(rows);
       return;
     }
     S.phase = 'question'; S.phaseT = this.QTIME;
     S.answers = new Map();
     const [q, opts] = S.qs[S.qi];
-    G.broadcast({ t: 'qnew', labels: opts, msg: `Question ${S.qi + 1}: pick your answer` });
+    G.broadcast({ t: 'qnew', labels: opts, msg: T('pickAnswer', S.qi + 1) });
   },
   onBtn(p, b, G) {
     const S = this.S;
@@ -72,7 +98,7 @@ registerGame({
         }
       }
       S.phase = 'reveal'; S.phaseT = 2.8;
-      G.broadcast({ t: 'qnew', msg: 'Answer revealed on the TV' });
+      G.broadcast({ t: 'qnew', msg: T('revealed') });
     } else if ((S.phase === 'reveal' || S.phase === 'next') && S.phaseT <= 0) {
       this.nextQ(G);
     }

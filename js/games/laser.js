@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1, TIME: 75,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick1', { a: 'LASER' });
+    G.setScheme(null, 'stick1', { a: T('laser') });
     const S = this.S = { units: new Map(), beams: [], walls: [] };
     S.walls = [
       { x: 200, y: 200, w: 240, h: 30 }, { x: 840, y: 200, w: 240, h: 30 },
@@ -92,7 +92,7 @@ registerGame({
     }
     if (G.time > this.TIME) {
       const rows = [...S.units.entries()].sort((a, b) => b[1].tags - a[1].tags)
-        .map(([pid, u]) => ({ pid, label: u.tags + ' tags' }));
+        .map(([pid, u]) => ({ pid, label: u.tags + ' ' + T('tags') }));
       G.finish(rows);
     }
   },
@@ -175,7 +175,7 @@ registerGame({
         ctx.beginPath(); ctx.arc(u.x, u.y, 23, -Math.PI / 2, -Math.PI / 2 + (1 - u.cd / 0.7) * Math.PI * 2);
         ctx.stroke();
       }
-      Draw2.tag(ctx, p, u.x, u.y - 34, '· ' + u.tags + (frozen ? ' · FROZEN' : ''));
+      Draw2.tag(ctx, p, u.x, u.y - 34, '· ' + u.tags + (frozen ? ' · ' + T('frozen') : ''));
     }
     Draw2.vignette(ctx, G, 0.5);
     Draw2.timer(ctx, G, this.TIME - G.time, this.TIME);

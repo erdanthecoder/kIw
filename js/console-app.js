@@ -1,21 +1,46 @@
-// CouchPlay console — lobby, room hosting, game lifecycle.
+// CouchPlay console — PS5-style home screen, room hosting, game lifecycle.
 // Games register themselves via registerGame(def); see js/games/*.js
 const GAMES = [];
 function registerGame(def) { GAMES.push(def); }
+
+// hero glow accent per game
+const ACCENTS = {
+  minecraft: '#4caf50', obby: '#ff9800', flappy: '#ffca28', snake: '#66bb6a',
+  tanks: '#a1887f', bomber: '#ef5350', laser: '#ab47bc', trivia: '#7e57c2',
+  draw: '#ec407a', reaction: '#ffee58', soccer: '#43a047', race: '#ef6c00',
+  pong: '#29b6f6', tetris: '#5c6bc0', blob: '#26a69a', dodge: '#e53935',
+};
 
 const App = {
   state: 'lobby',          // lobby | count | game | results
   players: new Map(),      // cid -> player
   net: null,
-  game: null,              // active game def
-  G: null,                 // game context passed to game hooks
+  game: null,
+  G: null,
   selIdx: 0,
   lastTs: 0,
 
   async boot() {
-    this.renderGrid();
+    this.applyLang();
+    this.renderRow();
+    this.renderHero();
+    this.renderPlayers();
     this.bindKeys();
     document.getElementById('endBtn').onclick = () => this.endGame();
+    document.getElementById('langBtn').onclick = () => {
+      I18N.set(I18N.lang === 'ru' ? 'en' : 'ru');
+      this.applyLang();
+      this.renderRow(); this.renderHero(); this.renderPlayers();
+      if (this.net) {
+        this.net.broadcast({ t: 'lang', lang: I18N.lang });
+        if (this.state === 'lobby') this.net.broadcast({ t: 'scene', s: 'wait', msg: T('waitingPick') });
+      }
+    };
+    setInterval(() => {
+      const d = new Date();
+      document.getElementById('clock').textContent =
+        String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }, 1000);
 
     try {
       this.net = await Net.host({
@@ -25,27 +50,39 @@ const App = {
         onMsg: (cid, m) => this.onMsg(cid, m),
       });
     } catch (e) {
-      document.getElementById('netBadge').textContent = 'Offline: ' + e.message;
       document.getElementById('roomCode').textContent = '----';
+      document.getElementById('joinUrl').textContent = e.message;
       return;
     }
     requestAnimationFrame((ts) => this.loop(ts));
   },
 
+  applyLang() {
+    document.getElementById('langBtn').textContent = I18N.lang === 'ru' ? 'EN' : 'RU';
+    document.getElementById('joinHead').textContent = T('joinRoom');
+    document.getElementById('lbHead').textContent = T('leaderboard');
+    document.getElementById('resultsLbHead').textContent = T('leaderboard');
+    document.getElementById('resultsTitle').textContent = T('results');
+    document.getElementById('backBtn').textContent = T('backToLobby');
+    document.getElementById('endBtn').textContent = T('endGame');
+    document.getElementById('psHint').textContent = T('hint');
+  },
+
   onReady({ code, modes }) {
     document.getElementById('roomCode').textContent = code;
-    const badge = document.getElementById('netBadge');
+    const dot = document.getElementById('netBadge');
     if (modes.includes('p2p')) {
-      badge.textContent = 'P2P direct — ultra low lag' + (modes.includes('relay') ? ' (+ relay backup)' : '');
-      badge.classList.add('p2p');
+      dot.className = 'net-dot p2p';
+      dot.title = T('netP2P') + (modes.includes('relay') ? ' ' + T('netBackup') : '');
     } else {
-      badge.textContent = 'Server relay mode';
+      dot.className = 'net-dot relay';
+      dot.title = T('netRelay');
     }
     const url = new URL('controller.html', location.href);
     url.search = '?room=' + code;
     document.getElementById('joinUrl').textContent = url.href;
     if (typeof QRCode !== 'undefined') {
-      new QRCode(document.getElementById('qr'), { text: url.href, width: 170, height: 170, correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(document.getElementById('qr'), { text: url.href, width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
     }
   },
 
@@ -68,17 +105,17 @@ const App = {
       pid: cid, slot,
       name: (name || '').trim().slice(0, 12) || 'Player ' + (slot + 1),
       color: COLORS[slot], colorName: COLOR_NAMES[slot],
-      in: { x: 0, y: 0 }, wins: 0, gone: false, spectating: false,
+      in: { x: 0, y: 0 }, wins: 0, gone: false, spectating: false, cam: null,
     };
     this.players.set(cid, p);
-    this.net.sendTo(cid, { t: 'welcome', slot, color: p.color, name: p.name, pid: cid });
+    this.net.sendTo(cid, { t: 'welcome', slot, color: p.color, name: p.name, pid: cid, lang: I18N.lang });
     if (this.state === 'lobby') {
-      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: 'Look at the big screen — waiting for the host to pick a game.' });
+      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: T('waitingPick') });
     } else {
       p.spectating = true;
-      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: 'Game in progress — you join in the next round.' });
+      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: T('gameInProgress') });
     }
-    this.toast(`${p.name} joined`);
+    this.toast(T('joined', p.name));
     this.renderPlayers();
   },
 
@@ -87,7 +124,7 @@ const App = {
     if (!p) return;
     p.gone = true;
     this.players.delete(cid);
-    this.toast(`${p.name} left`);
+    this.toast(T('left', p.name));
     this.renderPlayers();
   },
 
@@ -102,46 +139,89 @@ const App = {
       p.in.y = clamp(+m.y || 0, -1, 1);
       return;
     }
+    if (m.t === 'cam') {
+      // small self-portrait from the phone camera, shown on the player card
+      if (typeof m.img === 'string' && m.img.startsWith('data:image/jpeg') && m.img.length < 80000) {
+        p.cam = m.img;
+        if (this.state === 'lobby' || this.state === 'results') this.renderPlayers();
+      } else if (m.img === null) {
+        p.cam = null;
+        this.renderPlayers();
+      }
+      return;
+    }
     if (m.t === 'btn') {
       if (this.state === 'lobby' && p.slot === 0) return this.lobbyBtn(m.b);
       if (this.state === 'game' && this.game && !p.spectating && this.game.onBtn) this.game.onBtn(p, m.b, this.G);
       return;
     }
-    // everything else goes to the running game (strokes, 3D positions, block edits…)
     if (this.state === 'game' && this.game && !p.spectating && this.game.onMsg) this.game.onMsg(p, m, this.G);
   },
 
+  sortedByWins() {
+    return [...this.players.values()].sort((a, b) => b.wins - a.wins || a.slot - b.slot);
+  },
+
   renderPlayers() {
-    const list = document.getElementById('playerList');
+    // bottom player cards (PS profile-card style)
+    const cards = document.getElementById('playerCards');
     const ps = [...this.players.values()].sort((a, b) => a.slot - b.slot);
-    document.getElementById('playerCount').textContent = ps.length;
-    list.innerHTML = ps.map(p =>
-      `<div class="player-chip"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="wins">${p.wins} win${p.wins === 1 ? '' : 's'}</span></div>`
-    ).join('') || '<div class="slots-hint">No players yet — scan the QR or enter the code on your phone.</div>';
-  },
-
-  // ---------- lobby ----------
-  renderGrid() {
-    const grid = document.getElementById('gameGrid');
-    grid.innerHTML = GAMES.map((g, i) =>
-      `<div class="game-tile ${i === this.selIdx ? 'sel' : ''}" data-i="${i}">
-        <span class="tag">${g.players}</span>
-        <div class="icon">${ICONS[g.id] || ICONS.logo}</div><h4>${g.title}</h4><p>${g.desc}</p>
+    let html = ps.map(p => `
+      <div class="pcard">
+        <div class="ava" style="border-color:${p.color};background:${p.cam ? '#000' : p.color}">
+          ${p.cam ? `<img src="${p.cam}" alt="">` : esc(p.name[0].toUpperCase())}
+        </div>
+        <div><div class="nm">${esc(p.name)}</div><div class="st">P${p.slot + 1} · ${p.wins} ${p.wins === 1 ? T('win') : T('wins')}</div></div>
       </div>`).join('');
-    grid.querySelectorAll('.game-tile').forEach(el => {
-      el.onclick = () => { this.selIdx = +el.dataset.i; this.startGame(GAMES[this.selIdx]); };
-    });
+    for (let i = ps.length; i < 8; i++) html += '<div class="pcard-empty">+</div>';
+    cards.innerHTML = html;
+    this.renderLeaderboard(document.getElementById('leaderboard'));
   },
 
-  moveSel(dx, dy) {
-    const cols = 4;
-    let r = Math.floor(this.selIdx / cols), c = this.selIdx % cols;
-    c = clamp(c + dx, 0, cols - 1);
-    r = clamp(r + dy, 0, Math.ceil(GAMES.length / cols) - 1);
-    this.selIdx = clamp(r * cols + c, 0, GAMES.length - 1);
-    this.renderGrid();
-    const el = document.querySelector('.game-tile.sel');
-    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  renderLeaderboard(el) {
+    if (!el) return;
+    const ranked = this.sortedByWins();
+    el.innerHTML = ranked.length ? ranked.map((p, i) =>
+      `<div class="lb-row"><span class="pos">${i + 1}</span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="w">${p.wins} ${p.wins === 1 ? T('win') : T('wins')}</span></div>`
+    ).join('') : `<div class="lb-empty">${T('noPlayers')}</div>`;
+  },
+
+  // ---------- PS5 home ----------
+  renderRow() {
+    const row = document.getElementById('gameRow');
+    row.innerHTML = GAMES.map((g, i) =>
+      `<div class="game-ico ${i === this.selIdx ? 'sel' : ''}" data-i="${i}" title="${esc(I18N.game(g.id, g).title)}">${ICONS[g.id] || ICONS.logo}</div>`).join('');
+    row.querySelectorAll('.game-ico').forEach(el => {
+      el.onclick = () => {
+        const i = +el.dataset.i;
+        if (i === this.selIdx) this.startGame(GAMES[i]);
+        else { this.selIdx = i; this.renderRow(); this.renderHero(); }
+      };
+    });
+    const sel = row.querySelector('.game-ico.sel');
+    if (sel) sel.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  },
+
+  renderHero() {
+    const g = GAMES[this.selIdx];
+    if (!g) return;
+    const meta = I18N.game(g.id, g);
+    document.getElementById('heroIcon').innerHTML = ICONS[g.id] || ICONS.logo;
+    document.getElementById('heroTitle').textContent = meta.title;
+    document.getElementById('heroDesc').textContent = meta.desc;
+    document.getElementById('heroMeta').textContent = (g.players + ' ' + T('players')).toUpperCase();
+    const hint = document.getElementById('heroHint');
+    hint.textContent = T('pressStart');
+    hint.onclick = () => this.startGame(g);
+    const a = ACCENTS[g.id] || '#2f9bff';
+    document.getElementById('psGlow').style.background =
+      `radial-gradient(900px 620px at 24% 38%, ${a}2e, transparent 70%)`;
+  },
+
+  moveSel(d) {
+    this.selIdx = clamp(this.selIdx + d, 0, GAMES.length - 1);
+    this.renderRow();
+    this.renderHero();
   },
 
   lobbyBtn(b) {
@@ -151,10 +231,8 @@ const App = {
   bindKeys() {
     window.addEventListener('keydown', (e) => {
       if (this.state === 'lobby') {
-        if (e.key === 'ArrowLeft') this.moveSel(-1, 0);
-        else if (e.key === 'ArrowRight') this.moveSel(1, 0);
-        else if (e.key === 'ArrowUp') this.moveSel(0, -1);
-        else if (e.key === 'ArrowDown') this.moveSel(0, 1);
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') this.moveSel(-1);
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') this.moveSel(1);
         else if (e.key === 'Enter') this.startGame(GAMES[this.selIdx]);
       } else if (this.state === 'game' && e.key === 'Escape') {
         this.endGame();
@@ -168,8 +246,9 @@ const App = {
   startGame(def) {
     if (!def || this.state !== 'lobby') return;
     const ps = [...this.players.values()];
+    const meta = I18N.game(def.id, def);
     if (ps.length < def.minPlayers) {
-      this.toast(`${def.title} needs at least ${def.minPlayers} player${def.minPlayers > 1 ? 's' : ''} — ${ps.length} joined`);
+      this.toast(T('needsPlayers', meta.title, def.minPlayers, ps.length));
       return;
     }
     this.game = def;
@@ -179,7 +258,7 @@ const App = {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('stage').classList.add('active');
     document.getElementById('gameHud').style.display = 'flex';
-    document.getElementById('hudTitle').textContent = def.title;
+    document.getElementById('hudTitle').textContent = meta.title;
 
     const canvas = document.getElementById('gameCanvas');
     const glWrap = document.getElementById('glWrap');
@@ -204,10 +283,9 @@ const App = {
       toast(msg) { self.toast(msg); },
     };
 
-    // countdown 3-2-1
     const co = document.getElementById('countOverlay');
     const num = document.getElementById('countNum');
-    document.getElementById('countGame').textContent = def.title;
+    document.getElementById('countGame').textContent = meta.title;
     co.classList.add('active');
     let n = 3;
     num.textContent = n;
@@ -216,7 +294,7 @@ const App = {
       if (n > 0) { num.textContent = n; return; }
       clearInterval(iv);
       co.classList.remove('active');
-      if (this.state !== 'count') return;  // aborted
+      if (this.state !== 'count') return;
       this.state = 'game';
       this.G.time = 0;
       def.init(this.G);
@@ -238,7 +316,7 @@ const App = {
         }
       } catch (e) {
         console.error(e);
-        this.toast('Game error — returning to lobby');
+        this.toast(T('gameError'));
         this.endGame();
       }
     }
@@ -250,15 +328,16 @@ const App = {
     this.cleanupGame();
     this.state = 'results';
     const podium = document.getElementById('podium');
-    const place = (i) => ['1st', '2nd', '3rd'][i] || (i + 1) + 'th';
+    const places = T('place');
     podium.innerHTML = (rows || []).map((r, i) => {
       const p = this.players.get(r.pid);
       if (!p) return '';
       if (i === 0) p.wins++;
-      return `<div class="row ${i === 0 ? 'gold' : ''}"><span class="place">${place(i)}</span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="pts">${esc(r.label || '')}</span></div>`;
-    }).join('') || '<div class="row">No results</div>';
+      return `<div class="row ${i === 0 ? 'gold' : ''}"><span class="place">${places[i] || (i + 1)}</span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="pts">${esc(r.label || '')}</span></div>`;
+    }).join('') || `<div class="row">${T('noResults')}</div>`;
+    this.renderLeaderboard(document.getElementById('resultsLb'));
     document.getElementById('resultsOverlay').classList.add('active');
-    this.G.setScheme(null, 'wait', { msg: 'Round over — check the big screen for standings.' });
+    this.G.setScheme(null, 'wait', { msg: T('roundOver') });
     this.renderPlayers();
     clearTimeout(this._resT);
     this._resT = setTimeout(() => this.toLobby(), 12000);
@@ -272,8 +351,7 @@ const App = {
 
   cleanupGame() {
     if (this.game && this.game.end) { try { this.game.end(this.G); } catch (e) {} }
-    const glWrap = document.getElementById('glWrap');
-    glWrap.innerHTML = '';
+    document.getElementById('glWrap').innerHTML = '';
   },
 
   toLobby() {
@@ -287,9 +365,10 @@ const App = {
     document.getElementById('gameHud').style.display = 'none';
     document.getElementById('lobby').style.display = 'flex';
     for (const p of this.players.values()) p.spectating = false;
-    if (this.net) this.net.broadcast({ t: 'scene', s: 'wait', msg: 'Look at the big screen — waiting for the host to pick a game.' });
+    if (this.net) this.net.broadcast({ t: 'scene', s: 'wait', msg: T('waitingPick') });
     this.renderPlayers();
-    this.renderGrid();
+    this.renderRow();
+    this.renderHero();
   },
 
   toast(msg) {
@@ -335,7 +414,6 @@ const Draw2 = {
     ctx.shadowBlur = 0;
   },
 
-  // name plate: dark pill with color dot + name
   tag(ctx, p, x, y, extra = '') {
     const txt = extra ? `${p.name} ${extra}` : p.name;
     ctx.font = '600 12px -apple-system, Segoe UI, sans-serif';
@@ -349,7 +427,6 @@ const Draw2 = {
     ctx.fillText(txt, x - w / 2 + 20, y + 0.5);
   },
 
-  // glossy sphere (balls, orbs, pellets)
   orb(ctx, x, y, r, color, glowing = false) {
     if (glowing) { ctx.shadowColor = color; ctx.shadowBlur = r * 1.6; }
     const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
@@ -363,7 +440,6 @@ const Draw2 = {
     ctx.beginPath(); ctx.ellipse(x - r * 0.32, y - r * 0.42, r * 0.28, r * 0.16, -0.6, 0, 7); ctx.fill();
   },
 
-  // player pawn: soft drop shadow + glossy body + rim
   pawn(ctx, x, y, r, color) {
     this.dropShadow(ctx, x, y + r * 0.82, r);
     this.orb(ctx, x, y, r, color);
@@ -399,11 +475,17 @@ const Draw2 = {
     }
   },
 
-  // ---- particles ----
   boom(x, y, color, n = 16, speed = 240, life = 0.55, size = 5) {
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2), sp = rand(speed * 0.3, speed);
       this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(life * 0.5, life), max: life, color, size: rand(size * 0.5, size) });
+    }
+  },
+  confetti(x, y, n = 40) {
+    const cols = ['#ff4655', '#2f9bff', '#2fd573', '#ffcf3f', '#b06cff', '#ff8c3a'];
+    for (let i = 0; i < n; i++) {
+      const a = rand(-Math.PI, 0), sp = rand(120, 420);
+      this.parts.push({ x: x + rand(-30, 30), y, vx: Math.cos(a) * sp * 0.6, vy: Math.sin(a) * sp, life: rand(0.7, 1.4), max: 1.4, color: cols[i % 6], size: rand(3, 6) });
     }
   },
   trail(x, y, color, size = 3, life = 0.3) {
@@ -417,7 +499,7 @@ const Draw2 = {
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.vx *= 0.96; p.vy = p.vy * 0.96 + 60 * dt;
     }
-    if (this.parts.length > 400) this.parts.splice(0, this.parts.length - 400);
+    if (this.parts.length > 450) this.parts.splice(0, this.parts.length - 450);
   },
   drawParts(ctx) {
     for (const p of this.parts) {
@@ -428,7 +510,6 @@ const Draw2 = {
     ctx.globalAlpha = 1;
   },
 
-  // ---- color utils ----
   _hex(color) {
     if (color[0] === '#') {
       const n = parseInt(color.slice(1), 16);

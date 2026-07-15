@@ -9,7 +9,7 @@ registerGame({
   PCOLORS: ['#2fe0d0', '#ffcf3f', '#b06cff', '#2f9bff', '#ff8c3a', '#ff4655', '#2fd573'],
   S: null,
   init(G) {
-    G.setScheme(null, 'tetris', { msg: 'Clear lines — garbage goes to your rivals' });
+    G.setScheme(null, 'tetris', { msg: T('clearLines') });
     const S = this.S = { boards: new Map(), deathOrder: [] };
     G.players.forEach(p => S.boards.set(p.pid, this.newBoard()));
   },
@@ -85,7 +85,7 @@ registerGame({
     board.alive = false;
     this.S.deathOrder.push(pid);
     const p = G.players.find(q => q.pid === pid);
-    if (p) { G.vib(p, 300); G.toast(`${p.name} topped out`); }
+    if (p) { G.vib(p, 300); G.toast(T('toppedOut', p.name)); }
   },
   onBtn(p, b, G) {
     const board = this.S.boards.get(p.pid);
@@ -122,8 +122,8 @@ registerGame({
     const alive = [...S.boards.entries()].filter(([, b]) => b.alive);
     if ((S.boards.size > 1 && alive.length <= 1) || (S.boards.size === 1 && !alive.length) || G.time > this.TIME) {
       const rows = [
-        ...alive.sort((a, b) => b[1].lines - a[1].lines).map(([pid, b]) => ({ pid, label: b.lines + ' lines · survived' })),
-        ...[...S.deathOrder].reverse().map(pid => ({ pid, label: S.boards.get(pid).lines + ' lines' })),
+        ...alive.sort((a, b) => b[1].lines - a[1].lines).map(([pid, b]) => ({ pid, label: b.lines + ' ' + T('lines') + ' · ' + T('survived') })),
+        ...[...S.deathOrder].reverse().map(pid => ({ pid, label: S.boards.get(pid).lines + ' ' + T('lines') })),
       ];
       G.finish(rows);
     }
@@ -195,7 +195,7 @@ registerGame({
       } else {
         ctx.fillStyle = 'rgba(0,0,0,.45)';
         ctx.fillRect(bx, by, bw, bh);
-        Draw2.label(ctx, 'OUT', bx + bw / 2, by + bh / 2, 26, 'rgba(255,255,255,.6)');
+        Draw2.label(ctx, T('out'), bx + bw / 2, by + bh / 2, 26, 'rgba(255,255,255,.6)');
       }
       Draw2.tag(ctx, p, bx + bw / 2, by - 18, '· ' + board.lines);
       if (board.pendingGarbage) Draw2.label(ctx, '+' + board.pendingGarbage, bx + bw + 2, by + 10, 15, '#ff5a66', 'left');

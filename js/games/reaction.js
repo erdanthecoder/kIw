@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1, ROUNDS: 7,
   S: null,
   init(G) {
-    G.setScheme(null, 'tap', { label: 'WAIT...' });
+    G.setScheme(null, 'tap', { label: T('wait') });
     this.S = {
       round: 0, phase: 'wait', phaseT: rand(1.5, 4),
       scores: new Map(G.players.map(p => [p.pid, 0])),
@@ -30,7 +30,7 @@ registerGame({
     if (S.phase === 'go') S.goTime += dt;
     if (S.phase === 'wait' && S.phaseT <= 0) {
       S.phase = 'go'; S.goTime = 0; S.phaseT = 2.5;
-      G.broadcast({ t: 'scene', s: 'tap', game: 'reaction', label: 'TAP NOW' });
+      G.broadcast({ t: 'scene', s: 'tap', game: 'reaction', label: T('tapNow') });
     } else if (S.phase === 'go' && S.phaseT <= 0) {
       const ranked = [...S.taps.entries()].sort((a, b) => a[1] - b[1]);
       const ptsTable = [100, 70, 50, 35, 25, 20, 15, 10];
@@ -40,12 +40,12 @@ registerGame({
     } else if (S.phase === 'reveal' && S.phaseT <= 0) {
       S.round++;
       if (S.round >= this.ROUNDS) {
-        const rows = [...S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' pts' }));
+        const rows = [...S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' ' + T('pts') }));
         return G.finish(rows);
       }
       S.phase = 'wait'; S.phaseT = rand(1.2, 4.5);
       S.taps = new Map(); S.fouls = new Set();
-      G.broadcast({ t: 'scene', s: 'tap', game: 'reaction', label: 'WAIT...' });
+      G.broadcast({ t: 'scene', s: 'tap', game: 'reaction', label: T('wait') });
     }
   },
   light(ctx, x, y, r, color, lit) {
@@ -69,7 +69,7 @@ registerGame({
   draw(ctx, G) {
     const S = this.S;
     Draw2.bg(ctx, G, '#0a0d16', '#121628');
-    Draw2.label(ctx, `Round ${S.round + 1} of ${this.ROUNDS}`, G.W / 2, 46, 20, 'rgba(255,255,255,.7)');
+    Draw2.label(ctx, T('roundN', S.round + 1, this.ROUNDS), G.W / 2, 46, 20, 'rgba(255,255,255,.7)');
     // starting-light rig
     ctx.fillStyle = '#1a1e2c';
     ctx.beginPath(); ctx.roundRect(G.W / 2 - 90, 90, 180, 420, 26); ctx.fill();
@@ -78,16 +78,16 @@ registerGame({
     this.light(ctx, G.W / 2, 165, 46, '#ff4655', S.phase === 'wait');
     this.light(ctx, G.W / 2, 300, 46, '#ffcf3f', false);
     this.light(ctx, G.W / 2, 435, 46, '#2fd573', S.phase === 'go');
-    if (S.phase === 'wait') Draw2.label(ctx, 'WAIT FOR GREEN', G.W / 2, 560, 34, '#ff8a93');
-    if (S.phase === 'go') Draw2.label(ctx, 'TAP NOW', G.W / 2, 560, 46, '#7dffb0');
+    if (S.phase === 'wait') Draw2.label(ctx, T('waitGreen'), G.W / 2, 560, 34, '#ff8a93');
+    if (S.phase === 'go') Draw2.label(ctx, T('tapNow'), G.W / 2, 560, 46, '#7dffb0');
     if (S.phase === 'reveal') {
       Draw2.panel(ctx, G.W / 2 - 240, 120, 480, 320, 18);
-      Draw2.label(ctx, 'Round results', G.W / 2, 152, 24);
+      Draw2.label(ctx, T('roundResults'), G.W / 2, 152, 24);
       (S.lastRanked || []).slice(0, 5).forEach(([pid, t], i) => {
         const p = G.players.find(q => q.pid === pid);
         if (p) Draw2.label(ctx, `${i + 1}.  ${p.name}  —  ${(t * 1000).toFixed(0)} ms`, G.W / 2, 200 + i * 44, 22, p.color);
       });
-      if (!S.lastRanked || !S.lastRanked.length) Draw2.label(ctx, 'Nobody tapped', G.W / 2, 240, 24, '#8b94ad');
+      if (!S.lastRanked || !S.lastRanked.length) Draw2.label(ctx, T('nobodyTapped'), G.W / 2, 240, 24, '#8b94ad');
     }
     let sx = G.W / 2 - (G.players.length - 1) * 72;
     for (const p of G.players) {

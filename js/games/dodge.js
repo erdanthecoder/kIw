@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1, TIME: 120,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick', { msg: 'Dodge the balls' });
+    G.setScheme(null, 'stick', { msg: T('dodgeBalls') });
     const S = this.S = { units: new Map(), balls: [], spawnT: 0, deathOrder: [] };
     G.players.forEach((p, i) => {
       const spots = [[200, 200], [1080, 200], [200, 520], [1080, 520], [640, 160], [640, 560], [160, 360], [1120, 360]];
@@ -59,7 +59,7 @@ registerGame({
     const total = S.units.size;
     if ((total > 1 && alive <= 1) || (total === 1 && !alive) || G.time > this.TIME) {
       const rows = [
-        ...[...S.units.entries()].filter(([, u]) => u.alive).map(([pid, u]) => ({ pid, label: u.t.toFixed(1) + 's · survived' })),
+        ...[...S.units.entries()].filter(([, u]) => u.alive).map(([pid, u]) => ({ pid, label: u.t.toFixed(1) + 's · ' + T('survived') })),
         ...[...S.deathOrder].reverse().map(pid => ({ pid, label: S.units.get(pid).t.toFixed(1) + 's' })),
       ];
       G.finish(rows);
@@ -111,6 +111,6 @@ registerGame({
     const alive = [...S.units.values()].filter(u => u.alive).length;
     ctx.fillStyle = 'rgba(5,8,16,.55)';
     ctx.beginPath(); ctx.roundRect(G.W / 2 - 100, 10, 200, 30, 15); ctx.fill();
-    Draw2.label(ctx, `${alive} alive   |   ${S.balls.length} balls`, G.W / 2, 25, 14, 'rgba(255,255,255,.9)');
+    Draw2.label(ctx, `${alive} ${T('alive')}   |   ${S.balls.length} ${T('ballsN')}`, G.W / 2, 25, 14, 'rgba(255,255,255,.9)');
   },
 });

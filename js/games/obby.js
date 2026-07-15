@@ -53,7 +53,7 @@ registerGame({
     } else if (m.t === 'fin' && !S.finished.includes(p.pid)) {
       S.finished.push(p.pid);
       if (!S.firstFinishAt) S.firstFinishAt = G.time;
-      G.toast(`${p.name} finished #${S.finished.length}`);
+      G.toast(T('finishedToast', p.name, S.finished.length));
       G.vib(p, 200);
     }
   },
@@ -83,10 +83,10 @@ registerGame({
 
     // standings
     const rows = this.ranking(G);
-    S.hud.innerHTML = '<b>Obby Rush</b> — first to the gold pad<br>' + rows.map((r, i) => {
+    S.hud.innerHTML = T('obbyHud') + '<br>' + rows.map((r, i) => {
       const p = G.players.find(q => q.pid === r.pid);
       return p ? `${i + 1}. <span style="color:${p.color}">●</span> ${esc(p.name)} <small>${esc(r.label)}</small>` : '';
-    }).join('<br>') + `<br><small>${Math.max(0, Math.ceil(this.TIME - G.time))}s left${S.firstFinishAt ? ' · last call ' + Math.max(0, Math.ceil(this.LAST_CALL - (G.time - S.firstFinishAt))) + 's' : ''}</small>`;
+    }).join('<br>') + `<br><small>${T('sLeft', Math.max(0, Math.ceil(this.TIME - G.time)))}${S.firstFinishAt ? ' · ' + T('lastCall', Math.max(0, Math.ceil(this.LAST_CALL - (G.time - S.firstFinishAt)))) : ''}</small>`;
 
     const everyoneDone = G.players.length > 0 && G.players.every(p => S.finished.includes(p.pid) || p.gone);
     const lastCallOver = S.firstFinishAt && (G.time - S.firstFinishAt > this.LAST_CALL);
@@ -97,7 +97,7 @@ registerGame({
   ranking(G) {
     const S = this.S;
     return [
-      ...S.finished.map((pid, i) => ({ pid, label: 'finished #' + (i + 1) })),
+      ...S.finished.map((pid, i) => ({ pid, label: T('finishedN', i + 1) })),
       ...G.players.filter(p => !S.finished.includes(p.pid))
         .map(p => ({ pid: p.pid, prog: (S.avatars.get(p.pid) || { prog: 0 }).prog }))
         .sort((a, b) => b.prog - a.prog)

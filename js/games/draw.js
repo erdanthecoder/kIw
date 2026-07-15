@@ -3,6 +3,8 @@ registerGame({
   id: 'draw', title: 'Draw & Guess', icon: 'draw', desc: 'Sketch on your phone — it appears on the TV. Others race to guess.',
   players: '2-8', minPlayers: 2,
   WORDS: ['cat', 'pizza', 'rocket', 'ghost', 'rainbow', 'castle', 'robot', 'banana', 'dragon', 'snowman', 'guitar', 'shark', 'cactus', 'crown', 'spider', 'burger', 'lighthouse', 'unicorn', 'volcano', 'penguin', 'wizard', 'submarine', 'tornado', 'dinosaur'],
+  WORDS_RU: ['кот', 'пицца', 'ракета', 'привидение', 'радуга', 'замок', 'робот', 'банан', 'дракон', 'снеговик', 'гитара', 'акула', 'кактус', 'корона', 'паук', 'бургер', 'маяк', 'единорог', 'вулкан', 'пингвин', 'волшебник', 'подлодка', 'торнадо', 'динозавр'],
+  get words() { return I18N.lang === 'ru' ? this.WORDS_RU : this.WORDS; },
   ROUND_TIME: 45,
   S: null, cvs: null,
   init(G) {
@@ -24,10 +26,10 @@ registerGame({
     S.drawer = S.order[S.ri];
     const drawerP = G.players.find(p => p.pid === S.drawer);
     if (!drawerP || drawerP.gone) return this.nextRound(G);
-    const pool = this.WORDS.filter(w => !S.usedWords.includes(w));
+    const pool = this.words.filter(w => !S.usedWords.includes(w));
     S.word = pool[Math.random() * pool.length | 0];
     S.usedWords.push(S.word);
-    const decoys = shuffle(this.WORDS.filter(w => w !== S.word)).slice(0, 3);
+    const decoys = shuffle(this.words.filter(w => w !== S.word)).slice(0, 3);
     S.options = shuffle([S.word, ...decoys]);
     S.guessed = new Map();
     S.phase = 'draw'; S.phaseT = this.ROUND_TIME;
@@ -35,7 +37,7 @@ registerGame({
     ctx.fillStyle = '#fdfbf5'; ctx.fillRect(0, 0, 800, 560);
     for (const p of G.players) {
       if (p.pid === S.drawer) G.setScheme(p, 'draw', { word: S.word });
-      else G.setScheme(p, 'quiz', { labels: S.options, msg: `${drawerP.name} is drawing — what is it?` });
+      else G.setScheme(p, 'quiz', { labels: S.options, msg: T('isDrawing', drawerP.name) });
     }
   },
   onMsg(p, m, G) {
@@ -71,14 +73,14 @@ registerGame({
       const allGuessed = guessers.length > 0 && guessers.every(p => S.guessed.has(p.pid));
       if (S.phaseT <= 0 || allGuessed) {
         S.phase = 'reveal'; S.phaseT = 3;
-        G.setScheme(null, 'wait', { msg: `It was "${S.word}"` });
+        G.setScheme(null, 'wait', { msg: T('itWas', S.word) });
       }
     } else if (S.phaseT <= 0) {
       this.nextRound(G);
     }
   },
   gameOver(G) {
-    const rows = [...this.S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' pts' }));
+    const rows = [...this.S.scores.entries()].sort((a, b) => b[1] - a[1]).map(([pid, sc]) => ({ pid, label: sc + ' ' + T('pts') }));
     G.finish(rows);
   },
   draw(ctx, G) {
@@ -99,7 +101,7 @@ registerGame({
     ctx.strokeStyle = 'rgba(0,0,0,.25)';
     ctx.strokeRect(fx, fy, fw - 8, fh - 8);
     // header
-    Draw2.label(ctx, S.phase === 'reveal' ? `It was "${S.word}"` : `${drawerP ? drawerP.name : '?'} is drawing  ·  round ${S.ri + 1} of ${S.order.length}`, G.W / 2, 40, 24);
+    Draw2.label(ctx, S.phase === 'reveal' ? T('itWas', S.word) : `${T('isDrawing', drawerP ? drawerP.name : '?')}  ·  ${T('roundOf', S.ri + 1, S.order.length)}`, G.W / 2, 40, 24);
     if (S.phase === 'draw') {
       ctx.fillStyle = 'rgba(255,255,255,.12)';
       ctx.beginPath(); ctx.roundRect(fx, 668, fw - 8, 8, 4); ctx.fill();
@@ -113,8 +115,8 @@ registerGame({
       Draw2.pawn(ctx, 58, y, 13, p.color);
       const isDrawer = p.pid === S.drawer;
       const g = S.guessed.get(p.pid);
-      let status = isDrawer ? 'drawing' : (g ? (g === S.word ? 'guessed it' : 'wrong') : 'thinking');
-      if (S.phase === 'reveal' && !isDrawer && !g) status = 'no guess';
+      let status = isDrawer ? T('drawing') : (g ? (g === S.word ? T('guessedIt') : T('wrong')) : T('thinking'));
+      if (S.phase === 'reveal' && !isDrawer && !g) status = T('noGuess');
       Draw2.label(ctx, p.name, 84, y - 8, 14, '#fff', 'left');
       Draw2.label(ctx, status, 84, y + 10, 11, isDrawer ? '#ffcf3f' : (g === S.word ? '#2fd573' : '#8b94ad'), 'left');
       Draw2.label(ctx, (S.scores.get(p.pid) || 0) + '', 196, y, 15, '#ffcf3f', 'right');

@@ -4,7 +4,7 @@ registerGame({
   players: '1-8', minPlayers: 1,
   S: null,
   init(G) {
-    G.setScheme(null, 'tap', { label: 'FLAP' });
+    G.setScheme(null, 'tap', { label: T('flap') });
     const clouds = [];
     for (let i = 0; i < 7; i++) clouds.push({ x: rand(0, G.W), y: rand(40, 260), s: rand(0.5, 1.2), v: rand(8, 18) });
     const hills = [];
@@ -63,7 +63,7 @@ registerGame({
       const rows = [...S.birds.entries()]
         .map(([pid, b]) => ({ pid, t: b.alive ? 1e9 : b.t, pipes: b.pipes }))
         .sort((a, b2) => b2.t - a.t || b2.pipes - a.pipes)
-        .map(r => ({ pid: r.pid, label: r.pipes + ' pipes' }));
+        .map(r => ({ pid: r.pid, label: r.pipes + ' ' + T('pipes') }));
       setTimeout(() => G.finish(rows), 1200);
     }
   },
@@ -173,6 +173,6 @@ registerGame({
     const best = [...S.birds.values()].reduce((a, c) => Math.max(a, c.pipes), 0);
     ctx.fillStyle = 'rgba(5,8,16,.55)';
     ctx.beginPath(); ctx.roundRect(G.W / 2 - 110, 10, 220, 30, 15); ctx.fill();
-    Draw2.label(ctx, `${alive} alive   |   ${best} pipes`, G.W / 2, 25, 15, 'rgba(255,255,255,.9)');
+    Draw2.label(ctx, `${alive} ${T('alive')}   |   ${best} ${T('pipes')}`, G.W / 2, 25, 15, 'rgba(255,255,255,.9)');
   },
 });

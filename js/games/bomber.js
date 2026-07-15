@@ -7,7 +7,7 @@ registerGame({
   ox() { return (1280 - this.COLS * this.CELL) / 2; },
   oy() { return (720 - this.ROWS * this.CELL) / 2 + 10; },
   init(G) {
-    G.setScheme(null, 'dpad1', { a: 'BOMB' });
+    G.setScheme(null, 'dpad1', { a: T('bomb') });
     const S = this.S = { grid: [], bombs: [], blasts: [], powers: [], players: new Map(), deathOrder: [] };
     for (let y = 0; y < this.ROWS; y++) {
       S.grid[y] = [];
@@ -94,8 +94,8 @@ registerGame({
     const totalPlayers = S.players.size;
     if ((totalPlayers > 1 && alive.length <= 1) || (totalPlayers === 1 && alive.length === 0) || G.time > this.TIME) {
       const rows = [];
-      alive.sort((a, b) => b[1].crates - a[1].crates).forEach(([pid, bp]) => rows.push({ pid, label: 'survived · ' + bp.crates + ' crates' }));
-      [...S.deathOrder].reverse().forEach(pid => rows.push({ pid, label: S.players.get(pid).crates + ' crates' }));
+      alive.sort((a, b) => b[1].crates - a[1].crates).forEach(([pid, bp]) => rows.push({ pid, label: T('survived') + ' · ' + bp.crates + ' ' + T('crates') }));
+      [...S.deathOrder].reverse().forEach(pid => rows.push({ pid, label: S.players.get(pid).crates + ' ' + T('crates') }));
       G.finish(rows);
     }
   },

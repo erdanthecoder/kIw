@@ -37,6 +37,9 @@ const Ctrl3D = {
       this.world = new E3D.World(msg.seed);
       for (const [x, y, z, id] of (msg.edits || [])) this.world.set(x, y, z, id);
       this.world.buildAll(this.scene);
+      E3D.decorate(this.world, this.scene);
+      this.clouds = E3D.makeClouds(msg.seed);
+      this.scene.add(this.clouds.group);
       const slot = this.me.slot || 0;
       const sx = 16 + (slot % 4) * 5, sz = 16 + Math.floor(slot / 4) * 5;
       this.pos = { x: sx + 0.5, y: this.world.topY(sx, sz) + 1.05, z: sz + 0.5 };
@@ -77,10 +80,10 @@ const Ctrl3D = {
     ui.innerHTML = `
       <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:22px;text-shadow:0 0 4px #000;pointer-events:none">+</div>
       <div id="c3dMsg" style="position:absolute;top:${mc ? 64 : 10}px;left:0;right:0;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px #000;pointer-events:none"></div>
-      <button class="c3d-btn" id="jumpBtn" style="right:18px;bottom:24px">JUMP</button>
+      <button class="c3d-btn" id="jumpBtn" style="right:18px;bottom:24px">${T('jump')}</button>
       ${mc ? `
-        <button class="c3d-btn" id="breakBtn" style="right:118px;bottom:70px;width:70px;height:70px">MINE</button>
-        <button class="c3d-btn" id="placeBtn" style="right:34px;bottom:124px;width:70px;height:70px">BUILD</button>
+        <button class="c3d-btn" id="breakBtn" style="right:118px;bottom:70px;width:70px;height:70px">${T('mine')}</button>
+        <button class="c3d-btn" id="placeBtn" style="right:34px;bottom:124px;width:70px;height:70px">${T('build')}</button>
         <div class="hotbar" id="hotbar"></div>` : ''}
     `;
     const hold = (id, fn) => {
@@ -103,9 +106,9 @@ const Ctrl3D = {
           b.classList.add('sel');
         });
       });
-      this.msg('Drag right side to look · left side to move · MINE breaks · BUILD places');
+      this.msg(T('mcHelp'));
     } else {
-      this.msg('Race to the gold platform. Green = checkpoint. Don\'t touch the lava.');
+      this.msg(T('obbyHelp'));
     }
   },
   msg(t) {
@@ -230,9 +233,10 @@ const Ctrl3D = {
     }
 
     if (this.mode === 'minecraft') {
+      if (this.clouds) this.clouds.tick(dt);
       this.vel.x = wishX; this.vel.z = wishZ;
       const w = this.world;
-      const solid = (x, y, z) => (y < 0) || (x >= 0 && x < w.sx && z >= 0 && z < w.sz && y < w.sy && w.get(x, y, z) !== 0);
+      const solid = (x, y, z) => (y < 0) || (x >= 0 && x < w.sx && z >= 0 && z < w.sz && y < w.sy && w.solidId(w.get(x, y, z)));
       this.onGround = E3D.moveAABB(this.pos, this.vel, dt, { w: 0.6, h: 1.8 }, solid);
       // keep inside the island
       this.pos.x = clamp(this.pos.x, 0.4, w.sx - 0.4);
@@ -258,10 +262,10 @@ const Ctrl3D = {
       if (res.ground) {
         if (res.ground.kind === 'cp') {
           const i = this.course.checkpoints.findIndex(c => Math.abs(c.z - res.ground.z) < 3);
-          if (i > this.cpIndex) { this.cpIndex = i; this.msg('Checkpoint ' + i + ' reached'); if (navigator.vibrate) navigator.vibrate(80); }
+          if (i > this.cpIndex) { this.cpIndex = i; this.msg(T('checkpoint', i)); if (navigator.vibrate) navigator.vibrate(80); }
         } else if (res.ground.kind === 'finish' && !this.finished) {
           this.finished = true;
-          this.msg('YOU FINISHED — check the TV for standings.');
+          this.msg(T('youFinished'));
           this.sendFn({ t: 'fin' });
           if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 200]);
         }
@@ -271,7 +275,7 @@ const Ctrl3D = {
         const cp = this.course.checkpoints[this.cpIndex];
         this.pos = { x: cp.x, y: cp.y + 0.6, z: cp.z };
         this.vel = { x: 0, y: 0, z: 0 };
-        this.msg('Into the lava — back to checkpoint ' + this.cpIndex);
+        this.msg(T('intoLava', this.cpIndex));
         if (navigator.vibrate) navigator.vibrate(200);
       }
     }

@@ -4,6 +4,15 @@ CouchPlay turns any big screen into a game console and everyone's phone into a
 controller. Like AirConsole — but free, open, and with an ultra-low-lag
 peer-to-peer connection. **16 games, up to 8 players**, no downloads, no accounts.
 
+- **PS5-style home screen**: horizontal game row, hero pane per game, session
+  leaderboard that updates automatically after every round, and PlayStation-style
+  player cards at the bottom.
+- **Camera avatars**: each player can optionally turn on their phone's front
+  camera — a small live selfie appears on their player card on the TV.
+- **Two languages**: English and Russian. The console has an EN/RU toggle
+  (auto-detected from the browser) and pushes the language to all controllers —
+  including translated trivia questions and Draw & Guess words.
+
 ## How it works
 
 1. **Console (big screen)** — open `console.html` on a TV, laptop, or projector.

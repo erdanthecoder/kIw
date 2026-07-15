@@ -9,26 +9,42 @@
 </head>
 <body>
 
-<div class="console-lobby" id="lobby">
-  <div class="console-top">
-    <div class="logo">Couch<em>Play</em></div>
-    <div class="net-badge" id="netBadge">connecting…</div>
-  </div>
-  <div class="console-main">
-    <div class="join-panel">
-      <h3>Join the room</h3>
-      <div class="room-code" id="roomCode">····</div>
-      <div id="qr"></div>
-      <div class="join-url" id="joinUrl"></div>
-      <h3 style="margin-top:8px">Players <span id="playerCount">0</span>/8</h3>
-      <div class="player-list" id="playerList"></div>
-      <div class="slots-hint">Phones, tablets & laptops can all join</div>
-    </div>
-    <div class="game-grid-wrap">
-      <div class="game-grid" id="gameGrid"></div>
-      <p class="console-hint">Click a game to start — or Player 1 can browse with the joystick and press <b>A</b>. Keyboard: arrows + Enter.</p>
+<div class="ps-lobby" id="lobby">
+  <div class="ps-glow" id="psGlow"></div>
+  <div class="ps-top">
+    <div class="logo small">Couch<em>Play</em></div>
+    <div class="game-row" id="gameRow"></div>
+    <div class="ps-status">
+      <button id="langBtn" class="lang-btn">RU</button>
+      <span class="net-dot" id="netBadge" title=""></span>
+      <span id="clock"></span>
     </div>
   </div>
+
+  <div class="ps-hero">
+    <div class="hero-info">
+      <div class="hero-icon" id="heroIcon"></div>
+      <h1 id="heroTitle"></h1>
+      <p class="hero-desc" id="heroDesc"></p>
+      <div class="hero-meta" id="heroMeta"></div>
+      <div class="hero-hint" id="heroHint"></div>
+      <p class="ps-hint" id="psHint"></p>
+    </div>
+    <div class="hero-side">
+      <div class="side-card">
+        <h3 id="joinHead">JOIN THE ROOM</h3>
+        <div class="room-code" id="roomCode">····</div>
+        <div id="qr"></div>
+        <div class="join-url" id="joinUrl"></div>
+      </div>
+      <div class="side-card">
+        <h3 id="lbHead">LEADERBOARD</h3>
+        <div class="lb-list" id="leaderboard"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ps-bottom" id="playerCards"></div>
 </div>
 
 <div id="stage">
@@ -38,14 +54,20 @@
 <div id="gameHud" style="display:none">
   <span class="title" id="hudTitle"></span>
   <span class="spacer"></span>
-  <button id="endBtn">✕ End game (Esc)</button>
+  <button id="endBtn">End game (Esc)</button>
 </div>
 
 <div class="overlay" id="countOverlay"><div class="huge" id="countNum">3</div><div class="sub" id="countGame"></div></div>
 <div class="overlay" id="resultsOverlay">
   <h1 id="resultsTitle">Results</h1>
-  <div class="podium" id="podium"></div>
-  <button onclick="App.toLobby()">Back to lobby</button>
+  <div class="results-wrap">
+    <div class="podium" id="podium"></div>
+    <div class="side-card results-lb">
+      <h3 id="resultsLbHead">LEADERBOARD</h3>
+      <div class="lb-list" id="resultsLb"></div>
+    </div>
+  </div>
+  <button id="backBtn" onclick="App.toLobby()">Back to lobby</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -53,6 +75,7 @@
 <script src="lib/qrcode.min.js"></script>
 <script src="lib/three.min.js"></script>
 <script src="js/icons.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/common.js"></script>
 <script src="js/net.js"></script>
 <script src="js/engine3d.js"></script>

@@ -13,13 +13,18 @@ registerGame({
     };
     S.scene = E3D.makeScene();
     S.world = new E3D.World(seed);
+    S.world.shadows = true;
     S.world.buildAll(S.scene);
+    E3D.decorate(S.world, S.scene);
+    S.clouds = E3D.makeClouds(seed);
+    S.scene.add(S.clouds.group);
     S.camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 400);
 
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block';
     G.glWrap.appendChild(canvas);
     S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    E3D.enableShadows(S.renderer, S.scene);
     this.resize(G);
     window.addEventListener('resize', this._rs = () => this.resize(G));
 
@@ -45,6 +50,7 @@ registerGame({
       let av = S.avatars.get(p.pid);
       if (!av) {
         av = { group: E3D.makeAvatar(new THREE.Color(p.color).getHex(), p.name), tx: m.p[0], ty: m.p[1], tz: m.p[2], ry: 0 };
+        av.group.traverse(o => { if (o.isMesh) o.castShadow = true; });
         av.group.position.set(m.p[0], m.p[1], m.p[2]);
         S.scene.add(av.group);
         S.avatars.set(p.pid, av);
@@ -66,6 +72,7 @@ registerGame({
   },
   update(dt, G) {
     const S = this.S;
+    S.clouds.tick(dt);
     // drop avatars of players who left
     for (const [pid, av] of S.avatars) {
       if (!G.players.some(p => p.pid === pid)) {
@@ -93,8 +100,8 @@ registerGame({
     S.camera.lookAt(cx, cy + 2, cz);
     S.renderer.render(S.scene, S.camera);
 
-    S.hud.innerHTML = '<b>CraftWorld</b> — sandbox, build together (host presses End to finish)<br>' +
-      G.players.map(p => `<span style="color:${p.color}">●</span> ${esc(p.name)}: ${S.placed.get(p.pid) || 0} blocks`).join(' &nbsp; ');
+    S.hud.innerHTML = T('mcHud') + '<br>' +
+      G.players.map(p => `<span style="color:${p.color}">●</span> ${esc(p.name)}: ${S.placed.get(p.pid) || 0} ${T('blocks')}`).join(' &nbsp; ');
   },
   end(G) {
     window.removeEventListener('resize', this._rs);
