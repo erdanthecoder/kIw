@@ -1,4 +1,4 @@
-# 🎮 CouchPlay — your free living-room console
+# CouchPlay — your free living-room console
 
 CouchPlay turns any big screen into a game console and everyone's phone into a
 controller. Like AirConsole — but free, open, and with an ultra-low-lag
@@ -24,24 +24,24 @@ peer-to-peer connection. **16 games, up to 8 players**, no downloads, no account
 
 ## The 16 games
 
-| | Game | Controls | What it is |
-|---|---|---|---|
-| ⛏️ | **CraftWorld 3D** | first-person 3D | Shared voxel island — build & break together, Minecraft-style |
-| 🏃 | **Obby Rush 3D** | first-person 3D | Race a 3D obstacle course over lava — checkpoints & moving platforms |
-| 🐦 | **Flappy Royale** | tap | Everyone flaps at once, last bird alive wins |
-| 🐍 | **Snake.io** | joystick | Grow your snake, cut off your friends |
-| 🛡️ | **Tank Battle** | stick + fire | Bouncing shells, walls, most kills wins |
-| 💣 | **Bomber Blast** | d-pad + bomb | Classic grid bomber with power-ups |
-| 🔫 | **Laser Tag** | stick + laser | Instant bouncing beams, freeze your rivals |
-| 🧠 | **Trivia Show** | 4 answer buttons | Questions on the TV, answers on your phone, speed = points |
-| 🎨 | **Draw & Guess** | draw / guess | Sketch on your phone, it appears on the TV live |
-| ⚡ | **Reaction Duel** | tap | Wait for green… TAP! False starts punished |
-| ⚽ | **Rocket Soccer** | stick + boost | 2 auto-teams, 1 ball, chaos |
-| 🏎️ | **Kart Dash** | stick + nitro | Top-down oval racing, 3 laps |
-| 🏓 | **Pong Royale** | joystick | Everyone guards an arc of the circle, 3 lives |
-| 🧱 | **Tetris Battle** | tetris pad | Clear lines to dump garbage on rivals |
-| 🟢 | **Blob Arena** | joystick | Agar-style: eat orbs, eat smaller players |
-| 🔴 | **Dodgeball Panic** | joystick | The arena fills with bouncing balls — survive |
+| Type | Game | Controls | What it is |
+|------|------|----------|-------------|
+| 3D | **CraftWorld 3D** | first-person 3D | Shared voxel island — build & break together, Minecraft-style |
+| 3D | **Obby Rush 3D** | first-person 3D | Race a 3D obstacle course over lava — checkpoints & moving platforms |
+| arcade | **Flappy Royale** | tap | Everyone flaps at once, last bird alive wins |
+| arcade | **Snake.io** | joystick | Grow your snake, cut off your friends |
+| action | **Tank Battle** | stick + fire | Bouncing shells, walls, most kills wins |
+| action | **Bomber Blast** | d-pad + bomb | Classic grid bomber with power-ups |
+| action | **Laser Tag** | stick + laser | Instant bouncing beams, freeze your rivals |
+| party | **Trivia Show** | 4 answer buttons | Questions on the TV, answers on your phone, speed = points |
+| party | **Draw & Guess** | draw / guess | Sketch on your phone, it appears on the TV live |
+| party | **Reaction Duel** | tap | Wait for green… TAP! False starts punished |
+| sports | **Rocket Soccer** | stick + boost | 2 auto-teams, 1 ball, chaos |
+| sports | **Kart Dash** | stick + nitro | Top-down oval racing, 3 laps |
+| sports | **Pong Royale** | joystick | Everyone guards an arc of the circle, 3 lives |
+| classic | **Tetris Battle** | tetris pad | Clear lines to dump garbage on rivals |
+| classic | **Blob Arena** | joystick | Agar-style: eat orbs, eat smaller players |
+| classic | **Dodgeball Panic** | joystick | The arena fills with bouncing balls — survive |
 
 Player 1 can even browse the game menu from their phone (joystick + A).
 
@@ -62,7 +62,7 @@ Wi-Fi join at `http://<your-ip>:8080/controller.html` (the QR code handles this)
 Host the repo as static files and open `console.html`. P2P handles everything —
 no backend needed. (The relay fallback simply won't be available.)
 
-> 📱 Phone browsers need HTTPS (or localhost) for some features; GitHub Pages
+> Phone browsers need HTTPS (or localhost) for some features; GitHub Pages
 > gives you HTTPS for free.
 
 ## Tech

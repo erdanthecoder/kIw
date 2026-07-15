@@ -1,10 +1,10 @@
 // Laser Tag Arena — instant bouncing beams, freeze your rivals.
 registerGame({
-  id: 'laser', title: 'Laser Tag', icon: '🔫', desc: 'Fire bouncing laser beams. Tag rivals to freeze them. Most tags in 75s.',
+  id: 'laser', title: 'Laser Tag', icon: 'laser', desc: 'Fire bouncing laser beams. Tag rivals to freeze them. Most tags in 75 seconds.',
   players: '1-8', minPlayers: 1, TIME: 75,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick1', { a: '⚡', asub: 'LASER' });
+    G.setScheme(null, 'stick1', { a: 'LASER' });
     const S = this.S = { units: new Map(), beams: [], walls: [] };
     S.walls = [
       { x: 200, y: 200, w: 240, h: 30 }, { x: 840, y: 200, w: 240, h: 30 },
@@ -17,11 +17,9 @@ registerGame({
     });
   },
   castBeam(S, x, y, a, maxBounce) {
-    // returns array of segments [[x1,y1,x2,y2],...]
     const segs = [];
     let dx = Math.cos(a), dy = Math.sin(a);
     for (let b = 0; b <= maxBounce; b++) {
-      // march the ray until it hits a wall or arena edge
       let t = 0, hit = null;
       const step = 6;
       let px = x, py = y;
@@ -50,20 +48,22 @@ registerGame({
     if (!u || u.frozen > 0 || u.cd > 0 || b !== 'a') return;
     u.cd = 0.7;
     const segs = this.castBeam(S, u.x, u.y, u.a, 1);
-    S.beams.push({ segs, t: 0.28, color: G.players.find(q => q.pid === p.pid).color });
-    // hit detection along segments
+    const color = G.players.find(q => q.pid === p.pid).color;
+    S.beams.push({ segs, t: 0.28, color });
+    const last = segs[segs.length - 1];
+    Draw2.boom(last[2], last[3], color, 8, 140, 0.3, 3);
     for (const [x1, y1, x2, y2] of segs) {
       for (const q of G.players) {
         if (q.pid === p.pid) continue;
         const v = S.units.get(q.pid);
         if (!v || v.frozen > 0) continue;
-        // point-line distance
         const L2 = (x2 - x1) ** 2 + (y2 - y1) ** 2 || 1;
         const tt = clamp(((v.x - x1) * (x2 - x1) + (v.y - y1) * (y2 - y1)) / L2, 0, 1);
         const d = dist(v.x, v.y, x1 + tt * (x2 - x1), y1 + tt * (y2 - y1));
         if (d < 22) {
           v.frozen = 2.5;
           u.tags++;
+          Draw2.boom(v.x, v.y, '#9ecfff', 14, 180, 0.6);
           G.vib(q, 250);
         }
       }
@@ -99,31 +99,85 @@ registerGame({
   draw(ctx, G) {
     const S = this.S;
     Draw2.bg(ctx, G, '#0a0714', '#150e2a');
-    ctx.fillStyle = '#2c2350';
-    for (const w of S.walls) { ctx.fillRect(w.x, w.y, w.w, w.h); }
+    // neon floor grid
+    ctx.strokeStyle = 'rgba(122,92,255,.08)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= G.W; x += 64) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, G.H); ctx.stroke(); }
+    for (let y = 0; y <= G.H; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(G.W, y); ctx.stroke(); }
+    // glowing walls
+    for (const w of S.walls) {
+      ctx.shadowColor = '#7a5cff'; ctx.shadowBlur = 18;
+      const wg = ctx.createLinearGradient(w.x, w.y, w.x, w.y + w.h);
+      wg.addColorStop(0, '#3c2f78'); wg.addColorStop(1, '#241c4a');
+      ctx.fillStyle = wg;
+      ctx.beginPath(); ctx.roundRect(w.x, w.y, w.w, w.h, 6); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(160,130,255,.6)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(w.x, w.y, w.w, w.h, 6); ctx.stroke();
+    }
+    // beams: outer glow + hot core
     for (const beam of S.beams) {
-      ctx.strokeStyle = beam.color;
-      ctx.lineWidth = 4;
-      ctx.globalAlpha = beam.t / 0.28;
-      ctx.shadowColor = beam.color; ctx.shadowBlur = 16;
-      ctx.beginPath();
-      for (const [x1, y1, x2, y2] of beam.segs) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
-      ctx.stroke();
+      const k = beam.t / 0.28;
+      for (const [w, col, alpha] of [[9, beam.color, 0.35], [4.5, beam.color, 0.8], [1.8, '#ffffff', 1]]) {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = w;
+        ctx.globalAlpha = k * alpha;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = beam.color; ctx.shadowBlur = 16;
+        ctx.beginPath();
+        for (const [x1, y1, x2, y2] of beam.segs) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+        ctx.stroke();
+      }
       ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     }
     for (const p of G.players) {
       const u = S.units.get(p.pid);
       if (!u) continue;
-      ctx.globalAlpha = u.frozen > 0 ? 0.45 : 1;
-      ctx.fillStyle = u.frozen > 0 ? '#9ecfff' : p.color;
-      ctx.beginPath(); ctx.arc(u.x, u.y, 18, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(u.x + Math.cos(u.a) * 26, u.y + Math.sin(u.a) * 26); ctx.stroke();
-      if (u.frozen > 0) Draw2.label(ctx, '🥶', u.x, u.y, 18);
-      Draw2.label(ctx, `${p.name} · ${u.tags}`, u.x, u.y - 30, 12);
-      ctx.globalAlpha = 1;
+      const frozen = u.frozen > 0;
+      // aim cone
+      if (!frozen) {
+        const cg = ctx.createRadialGradient(u.x, u.y, 6, u.x, u.y, 90);
+        cg.addColorStop(0, 'rgba(255,255,255,.10)');
+        cg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.moveTo(u.x, u.y);
+        ctx.arc(u.x, u.y, 90, u.a - 0.22, u.a + 0.22);
+        ctx.closePath(); ctx.fill();
+      }
+      Draw2.dropShadow(ctx, u.x, u.y + 15, 17);
+      // metallic ring
+      ctx.strokeStyle = frozen ? '#9ecfff' : '#c9ccd4';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(u.x, u.y, 18, 0, 7); ctx.stroke();
+      Draw2.orb(ctx, u.x, u.y, 13, frozen ? '#9ecfff' : p.color, !frozen);
+      // barrel tick
+      if (!frozen) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(u.x + Math.cos(u.a) * 14, u.y + Math.sin(u.a) * 14);
+        ctx.lineTo(u.x + Math.cos(u.a) * 24, u.y + Math.sin(u.a) * 24); ctx.stroke();
+      } else {
+        // ice cracks
+        ctx.strokeStyle = 'rgba(255,255,255,.75)';
+        ctx.lineWidth = 1.5;
+        for (let a = 0; a < 6; a++) {
+          const ang = a * 1.05 + 0.3;
+          ctx.beginPath(); ctx.moveTo(u.x, u.y);
+          ctx.lineTo(u.x + Math.cos(ang) * 15, u.y + Math.sin(ang) * 15);
+          ctx.stroke();
+        }
+      }
+      // recharge arc
+      if (u.cd > 0 && !frozen) {
+        ctx.strokeStyle = 'rgba(255,255,255,.55)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(u.x, u.y, 23, -Math.PI / 2, -Math.PI / 2 + (1 - u.cd / 0.7) * Math.PI * 2);
+        ctx.stroke();
+      }
+      Draw2.tag(ctx, p, u.x, u.y - 34, '· ' + u.tags + (frozen ? ' · FROZEN' : ''));
     }
-    Draw2.timer(ctx, G, this.TIME - G.time);
+    Draw2.vignette(ctx, G, 0.5);
+    Draw2.timer(ctx, G, this.TIME - G.time, this.TIME);
   },
 });

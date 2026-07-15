@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>CouchPlay Controller</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🎮</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f9bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9h12a4 4 0 0 1 4 4v2a3 3 0 0 1-5.5 1.7L15 15H9l-1.5 1.7A3 3 0 0 1 2 15v-2a4 4 0 0 1 4-4z'/></svg>">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,14 +14,14 @@
     <p style="color:var(--dim)">Enter the room code from the TV</p>
     <input id="code" maxlength="6" placeholder="CODE" autocomplete="off" inputmode="latin">
     <input id="name" maxlength="12" placeholder="Your name" autocomplete="off">
-    <button id="joinBtn">JOIN ▶</button>
+    <button id="joinBtn">JOIN</button>
     <div class="err" id="joinErr"></div>
   </div>
 
   <div class="ctrl-wait" id="waitScreen">
     <div class="me-badge" id="meBadge">P1</div>
     <h2 id="meName">Player</h2>
-    <p>You're in! 👀 Look at the big screen.<br>The host picks the game — your controller will change automatically.</p>
+    <p>You're in. Look at the big screen.<br>The host picks the game — your controller will change automatically.</p>
   </div>
 
   <div id="pad"></div>

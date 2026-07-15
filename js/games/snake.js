@@ -1,13 +1,13 @@
-// Snake.io — steer your snake, eat glow pellets, don't hit other snakes.
+// Snake.io — steer your snake, eat glow orbs, don't hit other snakes.
 registerGame({
-  id: 'snake', title: 'Snake.io', icon: '🐍', desc: 'Steer with the joystick, eat orbs to grow. Crashing drops your orbs!',
+  id: 'snake', title: 'Snake.io', icon: 'snake', desc: 'Steer with the joystick, eat orbs to grow. Crashing drops your orbs.',
   players: '1-8', minPlayers: 1, TIME: 150,
   S: null,
   init(G) {
-    G.setScheme(null, 'stick', { msg: 'Steer your snake with the joystick' });
-    const S = this.S = { snakes: new Map(), food: [] };
+    G.setScheme(null, 'stick', { msg: 'Steer your snake with the joystick — push to the edge for a speed boost' });
+    const S = this.S = { snakes: new Map(), food: [], pulse: 0 };
     G.players.forEach((p, i) => S.snakes.set(p.pid, this.spawn(G, i)));
-    for (let i = 0; i < 45; i++) S.food.push({ x: rand(30, G.W - 30), y: rand(60, G.H - 30), r: 6 });
+    for (let i = 0; i < 45; i++) S.food.push({ x: rand(30, G.W - 30), y: rand(60, G.H - 30), r: 6, hue: irand(0, 3) });
   },
   spawn(G, i) {
     const x = 140 + (i % 4) * 320, y = i < 4 ? 180 : 540;
@@ -17,6 +17,7 @@ registerGame({
   },
   update(dt, G) {
     const S = this.S;
+    S.pulse += dt;
     for (const p of G.players) {
       const s = S.snakes.get(p.pid);
       if (!s) continue;
@@ -25,7 +26,6 @@ registerGame({
         if (s.respawn <= 0 && !p.gone) Object.assign(s, this.spawn(G, p.slot));
         continue;
       }
-      // steer toward stick direction
       if (Math.hypot(p.in.x, p.in.y) > 0.25) {
         const target = Math.atan2(p.in.y, p.in.x);
         let d = target - s.dir;
@@ -34,34 +34,35 @@ registerGame({
         s.dir += clamp(d, -4.2 * dt, 4.2 * dt);
       }
       const head = s.pts[0];
-      const boost = Math.hypot(p.in.x, p.in.y) > 0.95 ? 1.25 : 1;
+      const boosting = Math.hypot(p.in.x, p.in.y) > 0.95;
+      const boost = boosting ? 1.25 : 1;
+      if (boosting) Draw2.trail(head.x, head.y, p.color, 3, 0.25);
       let nx = head.x + Math.cos(s.dir) * s.speed * boost * dt;
       let ny = head.y + Math.sin(s.dir) * s.speed * boost * dt;
-      // wrap around edges (io style)
       if (nx < 0) nx += G.W; if (nx > G.W) nx -= G.W;
       if (ny < 0) ny += G.H; if (ny > G.H) ny -= G.H;
       if (dist(nx, ny, head.x, head.y) > 4.5) s.pts.unshift({ x: nx, y: ny });
       else { head.x = nx; head.y = ny; }
       while (s.pts.length > s.len) s.pts.pop();
 
-      // eat food
       for (let i = S.food.length - 1; i >= 0; i--) {
         if (dist(nx, ny, S.food[i].x, S.food[i].y) < 16) {
+          Draw2.boom(S.food[i].x, S.food[i].y, '#ffcf3f', 6, 90, 0.35, 3);
           S.food.splice(i, 1);
           s.len += 4;
           s.best = Math.max(s.best, s.len);
           G.vib(p, 25);
-          S.food.push({ x: rand(30, G.W - 30), y: rand(60, G.H - 30), r: 6 });
+          S.food.push({ x: rand(30, G.W - 30), y: rand(60, G.H - 30), r: 6, hue: irand(0, 3) });
         }
       }
-      // collide with other snakes' bodies
       for (const [opid, o] of S.snakes) {
         if (!o.alive) continue;
         const startIdx = opid === p.pid ? 8 : 0;
         for (let i = startIdx; i < o.pts.length; i += 2) {
           if (dist(nx, ny, o.pts[i].x, o.pts[i].y) < 9) {
             s.alive = false; s.respawn = 2.5;
-            for (let k = 0; k < s.pts.length; k += 3) S.food.push({ x: s.pts[k].x, y: s.pts[k].y, r: 6 });
+            Draw2.boom(nx, ny, p.color, 20, 240, 0.7);
+            for (let k = 0; k < s.pts.length; k += 3) S.food.push({ x: s.pts[k].x, y: s.pts[k].y, r: 6, hue: irand(0, 3) });
             if (S.food.length > 160) S.food.length = 160;
             G.vib(p, 200);
             break;
@@ -80,27 +81,48 @@ registerGame({
   draw(ctx, G) {
     const S = this.S;
     Draw2.bg(ctx, G, '#070d18', '#0d1a30');
+    // subtle hex-ish dot grid
+    ctx.fillStyle = 'rgba(255,255,255,.035)';
+    for (let y = 30; y < G.H; y += 44)
+      for (let x = 30 + (y % 88 === 30 ? 0 : 22); x < G.W; x += 44) {
+        ctx.beginPath(); ctx.arc(x, y, 1.4, 0, 7); ctx.fill();
+      }
+    const FOOD_C = ['#ffcf3f', '#2fe0d0', '#ff7ab8', '#b06cff'];
     for (const f of S.food) {
-      ctx.fillStyle = '#ffcf3f';
-      ctx.shadowColor = '#ffcf3f'; ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
-      ctx.shadowBlur = 0;
+      const r = f.r + Math.sin(S.pulse * 3 + f.x) * 1;
+      Draw2.orb(ctx, f.x, f.y, r, FOOD_C[f.hue], true);
     }
     for (const p of G.players) {
       const s = S.snakes.get(p.pid);
       if (!s || !s.alive) continue;
-      for (let i = s.pts.length - 1; i >= 0; i--) {
+      // body: taper + alternating stripes, drawn tail-to-head
+      for (let i = s.pts.length - 1; i >= 1; i--) {
         const pt = s.pts[i];
-        const r = i === 0 ? 10 : 8 - 3 * (i / s.pts.length);
-        ctx.fillStyle = i === 0 ? '#fff' : p.color;
+        const t = i / s.pts.length;
+        const r = 9 - 4 * t;
+        const c = i % 4 < 2 ? p.color : Draw2.darken(p.color, 0.22);
+        const g = ctx.createRadialGradient(pt.x - r * 0.3, pt.y - r * 0.3, r * 0.2, pt.x, pt.y, r);
+        g.addColorStop(0, Draw2.lighten(c, 0.3));
+        g.addColorStop(1, Draw2.darken(c, 0.3));
+        ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 7); ctx.fill();
-        if (i === 0) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath(); ctx.arc(pt.x, pt.y, 6.5, 0, 7); ctx.fill();
-        }
       }
-      Draw2.label(ctx, `${p.name} · ${s.len}`, s.pts[0].x, s.pts[0].y - 20, 13);
+      // head
+      const h = s.pts[0];
+      Draw2.orb(ctx, h.x, h.y, 10.5, p.color);
+      // eyes look along direction of travel
+      const ex = Math.cos(s.dir), ey = Math.sin(s.dir);
+      const px = -ey, py = ex;
+      for (const side of [-1, 1]) {
+        const ox = h.x + ex * 4 + px * 4.6 * side, oy = h.y + ey * 4 + py * 4.6 * side;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ox, oy, 3.4, 0, 7); ctx.fill();
+        ctx.fillStyle = '#101010';
+        ctx.beginPath(); ctx.arc(ox + ex * 1.4, oy + ey * 1.4, 1.7, 0, 7); ctx.fill();
+      }
+      Draw2.tag(ctx, p, h.x, h.y - 24, '· ' + s.len);
     }
-    Draw2.timer(ctx, G, this.TIME - G.time);
+    Draw2.vignette(ctx, G, 0.4);
+    Draw2.timer(ctx, G, this.TIME - G.time, this.TIME);
   },
 });

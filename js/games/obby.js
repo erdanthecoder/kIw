@@ -1,7 +1,7 @@
 // Obby Rush (3D obstacle course) — HOST side. Players parkour in first person
 // on their own device; the console shows a chase-cam of the leader + standings.
 registerGame({
-  id: 'obby', title: 'Obby Rush 3D', icon: '🏃', desc: 'Race a 3D obstacle course over lava. Checkpoints, moving platforms, glory.',
+  id: 'obby', title: 'Obby Rush 3D', icon: 'obby', desc: 'Race a 3D obstacle course over lava. Checkpoints, moving platforms, glory.',
   players: '1-8', minPlayers: 1, TIME: 240, LAST_CALL: 40,
   S: null,
   init(G) {
@@ -53,7 +53,7 @@ registerGame({
     } else if (m.t === 'fin' && !S.finished.includes(p.pid)) {
       S.finished.push(p.pid);
       if (!S.firstFinishAt) S.firstFinishAt = G.time;
-      G.toast(`🏁 ${p.name} finished #${S.finished.length}!`);
+      G.toast(`${p.name} finished #${S.finished.length}`);
       G.vib(p, 200);
     }
   },
@@ -83,10 +83,10 @@ registerGame({
 
     // standings
     const rows = this.ranking(G);
-    S.hud.innerHTML = '🏃 <b>Obby Rush</b> — first to the gold pad!<br>' + rows.map((r, i) => {
+    S.hud.innerHTML = '<b>Obby Rush</b> — first to the gold pad<br>' + rows.map((r, i) => {
       const p = G.players.find(q => q.pid === r.pid);
       return p ? `${i + 1}. <span style="color:${p.color}">●</span> ${esc(p.name)} <small>${esc(r.label)}</small>` : '';
-    }).join('<br>') + `<br><small>⏱ ${Math.max(0, Math.ceil(this.TIME - G.time))}s${S.firstFinishAt ? ' · last call ' + Math.max(0, Math.ceil(this.LAST_CALL - (G.time - S.firstFinishAt))) + 's' : ''}</small>`;
+    }).join('<br>') + `<br><small>${Math.max(0, Math.ceil(this.TIME - G.time))}s left${S.firstFinishAt ? ' · last call ' + Math.max(0, Math.ceil(this.LAST_CALL - (G.time - S.firstFinishAt))) + 's' : ''}</small>`;
 
     const everyoneDone = G.players.length > 0 && G.players.every(p => S.finished.includes(p.pid) || p.gone);
     const lastCallOver = S.firstFinishAt && (G.time - S.firstFinishAt > this.LAST_CALL);
@@ -97,7 +97,7 @@ registerGame({
   ranking(G) {
     const S = this.S;
     return [
-      ...S.finished.map((pid, i) => ({ pid, label: '🏁 #' + (i + 1) })),
+      ...S.finished.map((pid, i) => ({ pid, label: 'finished #' + (i + 1) })),
       ...G.players.filter(p => !S.finished.includes(p.pid))
         .map(p => ({ pid: p.pid, prog: (S.avatars.get(p.pid) || { prog: 0 }).prog }))
         .sort((a, b) => b.prog - a.prog)

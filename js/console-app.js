@@ -11,7 +11,6 @@ const App = {
   G: null,                 // game context passed to game hooks
   selIdx: 0,
   lastTs: 0,
-  navCool: 0,
 
   async boot() {
     this.renderGrid();
@@ -26,7 +25,7 @@ const App = {
         onMsg: (cid, m) => this.onMsg(cid, m),
       });
     } catch (e) {
-      document.getElementById('netBadge').textContent = '⚠ ' + e.message;
+      document.getElementById('netBadge').textContent = 'Offline: ' + e.message;
       document.getElementById('roomCode').textContent = '----';
       return;
     }
@@ -37,10 +36,10 @@ const App = {
     document.getElementById('roomCode').textContent = code;
     const badge = document.getElementById('netBadge');
     if (modes.includes('p2p')) {
-      badge.textContent = '⚡ P2P direct — ultra low lag' + (modes.includes('relay') ? ' (+ relay backup)' : '');
+      badge.textContent = 'P2P direct — ultra low lag' + (modes.includes('relay') ? ' (+ relay backup)' : '');
       badge.classList.add('p2p');
     } else {
-      badge.textContent = '🔁 Server relay mode';
+      badge.textContent = 'Server relay mode';
     }
     const url = new URL('controller.html', location.href);
     url.search = '?room=' + code;
@@ -72,14 +71,14 @@ const App = {
       in: { x: 0, y: 0 }, wins: 0, gone: false, spectating: false,
     };
     this.players.set(cid, p);
-    this.net.sendTo(cid, { t: 'welcome', slot, color: p.color, name: p.name });
+    this.net.sendTo(cid, { t: 'welcome', slot, color: p.color, name: p.name, pid: cid });
     if (this.state === 'lobby') {
       this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: 'Look at the big screen — waiting for the host to pick a game.' });
     } else {
       p.spectating = true;
-      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: 'Game in progress — you join in the next round!' });
+      this.net.sendTo(cid, { t: 'scene', s: 'wait', msg: 'Game in progress — you join in the next round.' });
     }
-    this.toast(`${p.name} joined 🎮`);
+    this.toast(`${p.name} joined`);
     this.renderPlayers();
   },
 
@@ -117,7 +116,7 @@ const App = {
     const ps = [...this.players.values()].sort((a, b) => a.slot - b.slot);
     document.getElementById('playerCount').textContent = ps.length;
     list.innerHTML = ps.map(p =>
-      `<div class="player-chip"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="wins">🏆 ${p.wins}</span></div>`
+      `<div class="player-chip"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="wins">${p.wins} win${p.wins === 1 ? '' : 's'}</span></div>`
     ).join('') || '<div class="slots-hint">No players yet — scan the QR or enter the code on your phone.</div>';
   },
 
@@ -127,7 +126,7 @@ const App = {
     grid.innerHTML = GAMES.map((g, i) =>
       `<div class="game-tile ${i === this.selIdx ? 'sel' : ''}" data-i="${i}">
         <span class="tag">${g.players}</span>
-        <div class="icon">${g.icon}</div><h4>${g.title}</h4><p>${g.desc}</p>
+        <div class="icon">${ICONS[g.id] || ICONS.logo}</div><h4>${g.title}</h4><p>${g.desc}</p>
       </div>`).join('');
     grid.querySelectorAll('.game-tile').forEach(el => {
       el.onclick = () => { this.selIdx = +el.dataset.i; this.startGame(GAMES[this.selIdx]); };
@@ -180,13 +179,14 @@ const App = {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('stage').classList.add('active');
     document.getElementById('gameHud').style.display = 'flex';
-    document.getElementById('hudTitle').textContent = def.icon + ' ' + def.title;
+    document.getElementById('hudTitle').textContent = def.title;
 
     const canvas = document.getElementById('gameCanvas');
     const glWrap = document.getElementById('glWrap');
     canvas.style.display = def.is3d ? 'none' : 'block';
     glWrap.style.display = def.is3d ? 'block' : 'none';
 
+    Draw2.reset();
     const self = this;
     this.G = {
       W: 1280, H: 720,
@@ -207,7 +207,7 @@ const App = {
     // countdown 3-2-1
     const co = document.getElementById('countOverlay');
     const num = document.getElementById('countNum');
-    document.getElementById('countGame').textContent = def.icon + ' ' + def.title;
+    document.getElementById('countGame').textContent = def.title;
     co.classList.add('active');
     let n = 3;
     num.textContent = n;
@@ -228,11 +228,13 @@ const App = {
     this.lastTs = ts;
     if (this.state === 'game' && this.game) {
       this.G.time += dt;
+      Draw2.tick(dt);
       try {
         this.game.update(dt, this.G);
         if (this.game.draw) {
           const ctx = document.getElementById('gameCanvas').getContext('2d');
           this.game.draw(ctx, this.G);
+          Draw2.drawParts(ctx);
         }
       } catch (e) {
         console.error(e);
@@ -248,15 +250,15 @@ const App = {
     this.cleanupGame();
     this.state = 'results';
     const podium = document.getElementById('podium');
-    const medals = ['🥇', '🥈', '🥉', '4.', '5.', '6.', '7.', '8.'];
+    const place = (i) => ['1st', '2nd', '3rd'][i] || (i + 1) + 'th';
     podium.innerHTML = (rows || []).map((r, i) => {
       const p = this.players.get(r.pid);
       if (!p) return '';
       if (i === 0) p.wins++;
-      return `<div class="row"><span class="place">${medals[i] || (i + 1) + '.'}</span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="pts">${esc(r.label || '')}</span></div>`;
+      return `<div class="row ${i === 0 ? 'gold' : ''}"><span class="place">${place(i)}</span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="pts">${esc(r.label || '')}</span></div>`;
     }).join('') || '<div class="row">No results</div>';
     document.getElementById('resultsOverlay').classList.add('active');
-    this.G.setScheme(null, 'wait', { msg: 'Round over! Check the big screen 🏆' });
+    this.G.setScheme(null, 'wait', { msg: 'Round over — check the big screen for standings.' });
     this.renderPlayers();
     clearTimeout(this._resT);
     this._resT = setTimeout(() => this.toLobby(), 12000);
@@ -299,22 +301,147 @@ const App = {
   },
 };
 
-// Shared 2D drawing helpers for games
+// ---------------------------------------------------------------------------
+// Draw2 — shared 2D renderer toolkit: gradients, glossy shapes, name tags,
+// particles and timers. Gives every game a consistent, polished look.
+// ---------------------------------------------------------------------------
 const Draw2 = {
+  parts: [],
+  reset() { this.parts = []; },
+
   bg(ctx, G, c1 = '#0a1020', c2 = '#101a33') {
     const g = ctx.createLinearGradient(0, 0, 0, G.H);
     g.addColorStop(0, c1); g.addColorStop(1, c2);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, G.W, G.H);
   },
-  label(ctx, txt, x, y, size = 16, color = '#fff', align = 'center') {
-    ctx.font = `700 ${size}px -apple-system, Segoe UI, sans-serif`;
+
+  vignette(ctx, G, strength = 0.5) {
+    const g = ctx.createRadialGradient(G.W / 2, G.H / 2, G.H * 0.42, G.W / 2, G.H / 2, G.H * 0.95);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${strength})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, G.W, G.H);
+  },
+
+  label(ctx, txt, x, y, size = 16, color = '#fff', align = 'center', weight = 700) {
+    ctx.font = `${weight} ${size}px -apple-system, Segoe UI, sans-serif`;
     ctx.fillStyle = color;
     ctx.textAlign = align;
     ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,.6)';
+    ctx.shadowBlur = 4;
     ctx.fillText(txt, x, y);
+    ctx.shadowBlur = 0;
   },
-  timer(ctx, G, left) {
-    this.label(ctx, '⏱ ' + Math.max(0, Math.ceil(left)) + 's', G.W / 2, 26, 20, 'rgba(255,255,255,.8)');
+
+  // name plate: dark pill with color dot + name
+  tag(ctx, p, x, y, extra = '') {
+    const txt = extra ? `${p.name} ${extra}` : p.name;
+    ctx.font = '600 12px -apple-system, Segoe UI, sans-serif';
+    const w = ctx.measureText(txt).width + 26;
+    ctx.fillStyle = 'rgba(5,8,16,.66)';
+    ctx.beginPath(); ctx.roundRect(x - w / 2, y - 10, w, 20, 10); ctx.fill();
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(x - w / 2 + 11, y, 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, x - w / 2 + 20, y + 0.5);
+  },
+
+  // glossy sphere (balls, orbs, pellets)
+  orb(ctx, x, y, r, color, glowing = false) {
+    if (glowing) { ctx.shadowColor = color; ctx.shadowBlur = r * 1.6; }
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    g.addColorStop(0, this.lighten(color, 0.55));
+    g.addColorStop(0.55, color);
+    g.addColorStop(1, this.darken(color, 0.45));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.ellipse(x - r * 0.32, y - r * 0.42, r * 0.28, r * 0.16, -0.6, 0, 7); ctx.fill();
+  },
+
+  // player pawn: soft drop shadow + glossy body + rim
+  pawn(ctx, x, y, r, color) {
+    this.dropShadow(ctx, x, y + r * 0.82, r);
+    this.orb(ctx, x, y, r, color);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke();
+  },
+
+  dropShadow(ctx, x, y, r) {
+    ctx.fillStyle = 'rgba(0,0,0,.32)';
+    ctx.beginPath(); ctx.ellipse(x, y, r * 0.9, r * 0.34, 0, 0, 7); ctx.fill();
+  },
+
+  panel(ctx, x, y, w, h, r = 14) {
+    ctx.fillStyle = 'rgba(255,255,255,.06)';
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill(); ctx.stroke();
+  },
+
+  timer(ctx, G, left, total) {
+    left = Math.max(0, left);
+    const m = Math.floor(left / 60), s = Math.ceil(left % 60) % 60;
+    const txt = m + ':' + String(s).padStart(2, '0');
+    ctx.fillStyle = 'rgba(5,8,16,.6)';
+    ctx.beginPath(); ctx.roundRect(G.W / 2 - 44, 10, 88, 30, 15); ctx.fill();
+    this.label(ctx, txt, G.W / 2, 25, 17, left < 11 ? '#ff5a66' : 'rgba(255,255,255,.92)');
+    if (total) {
+      ctx.fillStyle = 'rgba(255,255,255,.14)';
+      ctx.fillRect(G.W / 2 - 40, 42, 80, 3);
+      ctx.fillStyle = left < 11 ? '#ff5a66' : '#2f9bff';
+      ctx.fillRect(G.W / 2 - 40, 42, 80 * clamp(left / total, 0, 1), 3);
+    }
+  },
+
+  // ---- particles ----
+  boom(x, y, color, n = 16, speed = 240, life = 0.55, size = 5) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), sp = rand(speed * 0.3, speed);
+      this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(life * 0.5, life), max: life, color, size: rand(size * 0.5, size) });
+    }
+  },
+  trail(x, y, color, size = 3, life = 0.3) {
+    this.parts.push({ x, y, vx: rand(-15, 15), vy: rand(-15, 15), life, max: life, color, size });
+  },
+  tick(dt) {
+    for (let i = this.parts.length - 1; i >= 0; i--) {
+      const p = this.parts[i];
+      p.life -= dt;
+      if (p.life <= 0) { this.parts.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vx *= 0.96; p.vy = p.vy * 0.96 + 60 * dt;
+    }
+    if (this.parts.length > 400) this.parts.splice(0, this.parts.length - 400);
+  },
+  drawParts(ctx) {
+    for (const p of this.parts) {
+      ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.life / p.max), 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  // ---- color utils ----
+  _hex(color) {
+    if (color[0] === '#') {
+      const n = parseInt(color.slice(1), 16);
+      return [n >> 16 & 255, n >> 8 & 255, n & 255];
+    }
+    return [255, 255, 255];
+  },
+  lighten(color, k) {
+    const [r, g, b] = this._hex(color);
+    return `rgb(${Math.min(255, r + (255 - r) * k) | 0},${Math.min(255, g + (255 - g) * k) | 0},${Math.min(255, b + (255 - b) * k) | 0})`;
+  },
+  darken(color, k) {
+    const [r, g, b] = this._hex(color);
+    return `rgb(${r * (1 - k) | 0},${g * (1 - k) | 0},${b * (1 - k) | 0})`;
   },
 };

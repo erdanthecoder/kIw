@@ -79,8 +79,8 @@ const Ctrl3D = {
       <div id="c3dMsg" style="position:absolute;top:${mc ? 64 : 10}px;left:0;right:0;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px #000;pointer-events:none"></div>
       <button class="c3d-btn" id="jumpBtn" style="right:18px;bottom:24px">JUMP</button>
       ${mc ? `
-        <button class="c3d-btn" id="breakBtn" style="right:118px;bottom:70px;width:70px;height:70px">⛏</button>
-        <button class="c3d-btn" id="placeBtn" style="right:34px;bottom:124px;width:70px;height:70px">🧱</button>
+        <button class="c3d-btn" id="breakBtn" style="right:118px;bottom:70px;width:70px;height:70px">MINE</button>
+        <button class="c3d-btn" id="placeBtn" style="right:34px;bottom:124px;width:70px;height:70px">BUILD</button>
         <div class="hotbar" id="hotbar"></div>` : ''}
     `;
     const hold = (id, fn) => {
@@ -103,9 +103,9 @@ const Ctrl3D = {
           b.classList.add('sel');
         });
       });
-      this.msg('Drag right side to look · left side to move · ⛏ break · 🧱 place');
+      this.msg('Drag right side to look · left side to move · MINE breaks · BUILD places');
     } else {
-      this.msg('Race to the gold platform! Green = checkpoint. Don\'t touch the lava!');
+      this.msg('Race to the gold platform. Green = checkpoint. Don\'t touch the lava.');
     }
   },
   msg(t) {
@@ -258,10 +258,10 @@ const Ctrl3D = {
       if (res.ground) {
         if (res.ground.kind === 'cp') {
           const i = this.course.checkpoints.findIndex(c => Math.abs(c.z - res.ground.z) < 3);
-          if (i > this.cpIndex) { this.cpIndex = i; this.msg('✅ Checkpoint ' + i + '!'); if (navigator.vibrate) navigator.vibrate(80); }
+          if (i > this.cpIndex) { this.cpIndex = i; this.msg('Checkpoint ' + i + ' reached'); if (navigator.vibrate) navigator.vibrate(80); }
         } else if (res.ground.kind === 'finish' && !this.finished) {
           this.finished = true;
-          this.msg('🏁 YOU FINISHED! Check the TV for standings.');
+          this.msg('YOU FINISHED — check the TV for standings.');
           this.sendFn({ t: 'fin' });
           if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 200]);
         }
@@ -271,7 +271,7 @@ const Ctrl3D = {
         const cp = this.course.checkpoints[this.cpIndex];
         this.pos = { x: cp.x, y: cp.y + 0.6, z: cp.z };
         this.vel = { x: 0, y: 0, z: 0 };
-        this.msg('🔥 Back to checkpoint ' + this.cpIndex);
+        this.msg('Into the lava — back to checkpoint ' + this.cpIndex);
         if (navigator.vibrate) navigator.vibrate(200);
       }
     }

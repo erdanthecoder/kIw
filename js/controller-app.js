@@ -35,12 +35,12 @@ const Ctrl = {
     try {
       this.conn = await Net.join(code, {
         onOpen: (mode) => {
-          document.getElementById('connPill').textContent = mode === 'p2p' ? '⚡ P2P' : '🔁 relay';
+          document.getElementById('connPill').textContent = mode === 'p2p' ? 'P2P direct' : 'relay';
         },
         onMsg: (m) => this.onMsg(m),
         onClose: () => {
           this.show('joinScreen');
-          document.getElementById('joinBtn').textContent = 'JOIN ▶';
+          document.getElementById('joinBtn').textContent = 'JOIN';
           document.getElementById('joinErr').textContent = 'Connection lost — join again.';
           if (window.Ctrl3D) Ctrl3D.stop();
         },
@@ -48,7 +48,7 @@ const Ctrl = {
       this.conn.send({ t: 'hello', name });
     } catch (e) {
       err.textContent = e.message;
-      document.getElementById('joinBtn').textContent = 'JOIN ▶';
+      document.getElementById('joinBtn').textContent = 'JOIN';
     }
   },
 
@@ -68,7 +68,7 @@ const Ctrl = {
       case 'full':
         this.show('joinScreen');
         document.getElementById('joinErr').textContent = 'Room is full (8 players max).';
-        document.getElementById('joinBtn').textContent = 'JOIN ▶';
+        document.getElementById('joinBtn').textContent = 'JOIN';
         break;
       case 'scene':
         this.setScene(m);
@@ -274,7 +274,7 @@ const Ctrl = {
     let color = colors[0];
     tools.innerHTML = colors.map((c, i) =>
       `<button data-c="${c}" class="${i === 0 ? 'sel' : ''}" style="background:${c}"></button>`).join('') +
-      `<button data-clear="1" style="background:#fff;font-size:18px">🗑</button>`;
+      `<button data-clear="1" style="background:#fff;color:#111;font-size:11px;font-weight:800">CLR</button>`;
     tools.querySelectorAll('button').forEach(b => {
       b.onclick = () => {
         if (b.dataset.clear) {

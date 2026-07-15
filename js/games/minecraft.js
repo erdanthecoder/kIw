@@ -2,7 +2,7 @@
 // same voxel island in first person ON THEIR OWN DEVICE; the console shows a
 // rotating spectator view and relays positions + block edits between players.
 registerGame({
-  id: 'minecraft', title: 'CraftWorld 3D', icon: '⛏️', desc: 'A shared voxel island. Build & break together in first person on your phone!',
+  id: 'minecraft', title: 'CraftWorld 3D', icon: 'minecraft', desc: 'A shared voxel island. Build & break together in first person on your phone!',
   players: '1-8', minPlayers: 1, is3d: true,
   S: null,
   init(G) {
@@ -93,7 +93,7 @@ registerGame({
     S.camera.lookAt(cx, cy + 2, cz);
     S.renderer.render(S.scene, S.camera);
 
-    S.hud.innerHTML = '⛏️ <b>CraftWorld</b> — sandbox, build together! (host presses End to finish)<br>' +
+    S.hud.innerHTML = '<b>CraftWorld</b> — sandbox, build together (host presses End to finish)<br>' +
       G.players.map(p => `<span style="color:${p.color}">●</span> ${esc(p.name)}: ${S.placed.get(p.pid) || 0} blocks`).join(' &nbsp; ');
   },
   end(G) {
