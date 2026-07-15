@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>CouchPlay — Free Couch Gaming Console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🎮</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="landing">
+  <div class="logo">Couch<em>Play</em></div>
+  <p class="tagline">Your free living-room console. One big screen, everyone's phone is a controller.<br>16 games &middot; up to 8 players &middot; no downloads, no accounts.</p>
+  <div class="landing-choices">
+    <button class="choice" onclick="location.href='console.html'">
+      <div class="big">📺</div>
+      <h2>Open Console</h2>
+      <p>Put this on the TV, laptop, or any big screen. It creates a room code + QR code and runs the games.</p>
+    </button>
+    <button class="choice" onclick="location.href='controller.html'">
+      <div class="big">🎮</div>
+      <h2>Join as Player</h2>
+      <p>Open this on your phone or tablet. Type the room code (or scan the QR on the TV) and it becomes your controller.</p>
+    </button>
+  </div>
+</div>
+<script>
+  // If someone scanned a QR that points at the root with ?room=CODE, send them to the controller.
+  const room = new URLSearchParams(location.search).get('room');
+  if (room) location.replace('controller.html?room=' + encodeURIComponent(room));
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>CouchPlay Controller</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🎮</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="ctrl">
+  <div class="ctrl-join" id="joinScreen">
+    <div class="logo">Couch<em>Play</em></div>
+    <p style="color:var(--dim)">Enter the room code from the TV</p>
+    <input id="code" maxlength="6" placeholder="CODE" autocomplete="off" inputmode="latin">
+    <input id="name" maxlength="12" placeholder="Your name" autocomplete="off">
+    <button id="joinBtn">JOIN ▶</button>
+    <div class="err" id="joinErr"></div>
+  </div>
+
+  <div class="ctrl-wait" id="waitScreen">
+    <div class="me-badge" id="meBadge">P1</div>
+    <h2 id="meName">Player</h2>
+    <p>You're in! 👀 Look at the big screen.<br>The host picks the game — your controller will change automatically.</p>
+  </div>
+
+  <div id="pad"></div>
+
+  <div id="c3dWrap">
+    <canvas id="c3d"></canvas>
+    <div class="c3d-ui" id="c3dUi"></div>
+  </div>
+</div>
+<div class="conn-pill" id="connPill"></div>
+
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/three.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/net.js"></script>
+<script src="js/engine3d.js"></script>
+<script src="js/ctrl3d.js"></script>
+<script src="js/controller-app.js"></script>
+</body>
+</html>

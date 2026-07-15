@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CouchPlay Console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🎮</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="console-lobby" id="lobby">
+  <div class="console-top">
+    <div class="logo">Couch<em>Play</em></div>
+    <div class="net-badge" id="netBadge">connecting…</div>
+  </div>
+  <div class="console-main">
+    <div class="join-panel">
+      <h3>Join the room</h3>
+      <div class="room-code" id="roomCode">····</div>
+      <div id="qr"></div>
+      <div class="join-url" id="joinUrl"></div>
+      <h3 style="margin-top:8px">Players <span id="playerCount">0</span>/8</h3>
+      <div class="player-list" id="playerList"></div>
+      <div class="slots-hint">Phones, tablets & laptops can all join</div>
+    </div>
+    <div class="game-grid-wrap">
+      <div class="game-grid" id="gameGrid"></div>
+      <p class="console-hint">Click a game to start — or Player 1 can browse with the joystick and press <b>A</b>. Keyboard: arrows + Enter.</p>
+    </div>
+  </div>
+</div>
+
+<div id="stage">
+  <canvas id="gameCanvas" width="1280" height="720"></canvas>
+  <div id="glWrap" style="display:none; position:absolute; inset:0;"></div>
+</div>
+<div id="gameHud" style="display:none">
+  <span class="title" id="hudTitle"></span>
+  <span class="spacer"></span>
+  <button id="endBtn">✕ End game (Esc)</button>
+</div>
+
+<div class="overlay" id="countOverlay"><div class="huge" id="countNum">3</div><div class="sub" id="countGame"></div></div>
+<div class="overlay" id="resultsOverlay">
+  <h1 id="resultsTitle">Results</h1>
+  <div class="podium" id="podium"></div>
+  <button onclick="App.toLobby()">Back to lobby</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/qrcode.min.js"></script>
+<script src="lib/three.min.js"></script>
+<script src="js/common.js"></script>
+<script src="js/net.js"></script>
+<script src="js/engine3d.js"></script>
+<script src="js/console-app.js"></script>
+<!-- games (host side) -->
+<script src="js/games/minecraft.js"></script>
+<script src="js/games/obby.js"></script>
+<script src="js/games/flappy.js"></script>
+<script src="js/games/snake.js"></script>
+<script src="js/games/tanks.js"></script>
+<script src="js/games/bomber.js"></script>
+<script src="js/games/laser.js"></script>
+<script src="js/games/trivia.js"></script>
+<script src="js/games/draw.js"></script>
+<script src="js/games/reaction.js"></script>
+<script src="js/games/soccer.js"></script>
+<script src="js/games/race.js"></script>
+<script src="js/games/pong.js"></script>
+<script src="js/games/tetris.js"></script>
+<script src="js/games/blob.js"></script>
+<script src="js/games/dodge.js"></script>
+<script>App.boot();</script>
+</body>
+</html>

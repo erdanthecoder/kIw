@@ -1,0 +1,13 @@
+{
+  "name": "couchplay",
+  "version": "1.0.0",
+  "description": "CouchPlay — a free couch-gaming console. Host on a big screen, friends join with their phones. 16 games, up to 8 players.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.21.1"
+  },
+  "license": "MIT"
+}
