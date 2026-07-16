@@ -173,6 +173,48 @@ button { font-family: inherit; }
   padding: 14px 40px; border-radius: 999px; font-size: 17px; font-weight: 700; cursor: pointer;
 }
 
+.settings-card { width: 400px; align-items: stretch; gap: 16px; }
+.settings-card h3 { text-align: center; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 15px; font-weight: 600; }
+.set-row input[type=range] { width: 200px; accent-color: var(--accent); }
+.seg { display: flex; border: 1px solid var(--card-hi); border-radius: 999px; overflow: hidden; }
+.seg button { background: transparent; color: var(--dim); border: none; padding: 7px 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.seg button.sel { background: var(--accent); color: #fff; }
+.set-note { color: var(--dim); font-size: 12px; line-height: 1.5; }
+.close-btn {
+  background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #fff; border: none;
+  padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+
+#musicBar {
+  position: fixed; bottom: 12px; right: 14px; z-index: 55;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(8,12,22,.78); border: 1px solid var(--card-hi); border-radius: 999px;
+  padding: 7px 12px; font-size: 12px; color: var(--dim); backdrop-filter: blur(8px);
+}
+#musicBar svg { width: 15px; height: 15px; color: var(--accent); animation: mbPulse 2.4s ease-in-out infinite; }
+@keyframes mbPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+#musicBar #mbName { max-width: 230px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cfd8ee; font-weight: 600; }
+#musicBar button {
+  background: transparent; border: none; color: var(--dim); cursor: pointer; font-size: 14px; padding: 0 3px;
+}
+#musicBar button:hover { color: #fff; }
+#musicBar.mb-paused svg { animation: none; opacity: .4; }
+
+/* lobby animations */
+.hero-info > * { animation: heroIn .5s cubic-bezier(.2,.7,.3,1) both; }
+.hero-info > *:nth-child(2) { animation-delay: .05s; }
+.hero-info > *:nth-child(3) { animation-delay: .1s; }
+.hero-info > *:nth-child(4) { animation-delay: .15s; }
+.hero-info > *:nth-child(5) { animation-delay: .2s; }
+@keyframes heroIn { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+#countOverlay .huge { animation: countPop .9s cubic-bezier(.2,.8,.3,1.2) infinite; }
+@keyframes countPop { 0% { transform: scale(.4); opacity: 0; } 35% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: .9; } }
+#resultsOverlay .podium .row { animation: heroIn .45s both; }
+#resultsOverlay .podium .row:nth-child(2) { animation-delay: .08s; }
+#resultsOverlay .podium .row:nth-child(3) { animation-delay: .16s; }
+#resultsOverlay .podium .row:nth-child(4) { animation-delay: .24s; }
+
 .toast {
   position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
   background: rgba(20,28,50,.95); border: 1px solid var(--card-hi); color: var(--text);
@@ -255,6 +297,51 @@ button { font-family: inherit; }
 .tetris-pad { position: absolute; inset: 46px 12px 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; }
 .tetris-pad button { border: 1px solid var(--card-hi); border-radius: 18px; background: rgba(255,255,255,.07); color: #fff; font-size: 30px; font-weight: 800; cursor: pointer; }
 .tetris-pad button:active { background: rgba(255,255,255,.3); }
+
+/* PlayStation-style pad */
+.stick-base2 {
+  position: absolute; left: 50%; top: 52%; width: 150px; height: 150px; margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #232a3c 0%, #141926 62%, #0c101c 100%);
+  border: 2px solid rgba(255,255,255,.1);
+  box-shadow: inset 0 6px 18px rgba(0,0,0,.7), 0 4px 16px rgba(0,0,0,.5);
+}
+.stick-nub2 {
+  position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #4a5570 0%, #2b3348 55%, #1a2032 100%);
+  border: 2px solid rgba(255,255,255,.16);
+  box-shadow: 0 8px 18px rgba(0,0,0,.6), inset 0 -8px 14px rgba(0,0,0,.45);
+  transition: transform .12s ease-out;
+}
+.stick-nub2::after {
+  content: ''; position: absolute; inset: 16px; border-radius: 50%;
+  border: 1.5px dashed rgba(255,255,255,.14);
+}
+.stick-nub2.live { transition: none; }
+.ps-zone { flex-direction: column; gap: 6px; }
+.ps-diamond { position: relative; width: 218px; height: 218px; }
+.ps-btn {
+  position: absolute; width: 76px; height: 76px; border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #262c3e 0%, #171c2b 60%, #10141f 100%);
+  border: 2px solid rgba(255,255,255,.13);
+  box-shadow: 0 5px 12px rgba(0,0,0,.55), inset 0 -5px 10px rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.ps-btn svg { width: 34px; height: 34px; }
+.ps-btn:active, .ps-btn.down { transform: scale(.92); filter: brightness(1.5); }
+.ps-btn.pos-t { top: 0; left: 50%; margin-left: -38px; }
+.ps-btn.pos-b { bottom: 0; left: 50%; margin-left: -38px; }
+.ps-btn.pos-l { left: 0; top: 50%; margin-top: -38px; }
+.ps-btn.pos-r { right: 0; top: 50%; margin-top: -38px; }
+.ps-btn.off { opacity: .22; pointer-events: none; }
+.act-label {
+  color: var(--dim); font-size: 12.5px; font-weight: 700; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 12px;
+}
+.act-label svg { width: 15px; height: 15px; vertical-align: -2px; }
+.ctrl-grip { position: absolute; bottom: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: .5; }
 
 #c3dWrap { flex: 1; display: none; position: relative; }
 #c3d { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }

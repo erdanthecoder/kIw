@@ -2,44 +2,225 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>CouchPlay — Free Couch Gaming Console</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f9bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9h12a4 4 0 0 1 4 4v2a3 3 0 0 1-5.5 1.7L15 15H9l-1.5 1.7A3 3 0 0 1 2 15v-2a4 4 0 0 1 4-4z'/></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CouchPlay — Your living room is the console</title>
+<meta name="description" content="CouchPlay turns any big screen into a free game console. Friends join with their phones — 16 games, up to 8 players, no downloads.">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  body.landing-page { overflow-y: auto; overflow-x: hidden; }
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; gap: 14px; padding: 14px 5vw;
+    background: rgba(7,11,20,.72); backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .nav img { width: 34px; height: 34px; }
+  .nav .logo { font-size: 20px; }
+  .nav .sp { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+    padding: 11px 22px; border-radius: 999px; font-size: 14px; font-weight: 700; color: #fff;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: transform .15s, box-shadow .15s; text-decoration: none;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(47,155,255,.35); }
+  .btn.ghost { background: rgba(255,255,255,.08); border: 1px solid var(--card-hi); }
+  .hero {
+    min-height: 92vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 120px 6vw 60px; position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: -20%; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(600px 420px at 28% 30%, rgba(47,155,255,.16), transparent 70%),
+      radial-gradient(600px 420px at 74% 62%, rgba(122,92,255,.16), transparent 70%);
+    animation: bgDrift 14s ease-in-out infinite alternate;
+  }
+  @keyframes bgDrift { from { transform: translate(-2%, -2%) scale(1); } to { transform: translate(2%, 3%) scale(1.06); } }
+  .float-ico {
+    position: absolute; color: rgba(207,224,255,.16); pointer-events: none;
+    animation: floaty ease-in-out infinite alternate;
+  }
+  .float-ico svg { width: 100%; height: 100%; }
+  @keyframes floaty { from { transform: translateY(-14px) rotate(-4deg); } to { transform: translateY(14px) rotate(5deg); } }
+  .hero img.mark { width: 108px; height: 108px; margin-bottom: 24px; filter: drop-shadow(0 16px 44px rgba(47,155,255,.4)); animation: heroIn .7s both; }
+  .hero h1 { font-size: clamp(34px, 6vw, 66px); letter-spacing: -1.5px; max-width: 850px; line-height: 1.08; animation: heroIn .7s .08s both; }
+  .hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.sub { color: var(--dim); font-size: clamp(15px, 2vw, 20px); max-width: 640px; margin-top: 18px; line-height: 1.6; animation: heroIn .7s .16s both; }
+  .hero .cta { display: flex; gap: 14px; margin-top: 34px; flex-wrap: wrap; justify-content: center; animation: heroIn .7s .24s both; }
+  .hero .cta .btn { padding: 15px 34px; font-size: 16px; }
+  .stats { display: flex; gap: clamp(18px, 5vw, 70px); margin-top: 60px; flex-wrap: wrap; justify-content: center; animation: heroIn .7s .32s both; }
+  .stats b { display: block; font-size: clamp(24px, 3vw, 38px); }
+  .stats span { color: var(--dim); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+  section.block { padding: 90px 6vw; max-width: 1150px; margin: 0 auto; }
+  section.block h2 { font-size: clamp(26px, 4vw, 42px); letter-spacing: -1px; margin-bottom: 14px; }
+  section.block > p { color: #b9c2d8; font-size: 17px; line-height: 1.75; max-width: 760px; }
+  .rv { opacity: 0; transform: translateY(34px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.3,1); }
+  .rv.in { opacity: 1; transform: none; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 36px; }
+  .step { background: var(--card); border: 1px solid var(--card-hi); border-radius: 20px; padding: 26px; }
+  .step .n {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); font-weight: 800; margin-bottom: 14px;
+  }
+  .step h3 { font-size: 18px; margin-bottom: 8px; }
+  .step p { color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 36px; }
+  .feat { background: var(--card); border: 1px solid var(--card-hi); border-radius: 20px; padding: 26px; transition: transform .2s, border-color .2s; }
+  .feat:hover { transform: translateY(-4px); border-color: rgba(47,155,255,.5); }
+  .feat .fi { width: 38px; height: 38px; color: var(--accent); margin-bottom: 14px; }
+  .feat .fi svg { width: 38px; height: 38px; }
+  .feat h3 { font-size: 17px; margin-bottom: 8px; }
+  .feat p { color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .gamegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; margin-top: 36px; }
+  .g {
+    background: var(--card); border: 1px solid var(--card-hi); border-radius: 16px; padding: 18px 12px;
+    text-align: center; color: #cfe0ff; font-size: 12.5px; font-weight: 600; transition: transform .18s, border-color .18s;
+  }
+  .g:hover { transform: translateY(-4px) scale(1.04); border-color: rgba(255,255,255,.35); color: #fff; }
+  .g svg { width: 34px; height: 34px; margin-bottom: 8px; }
+  footer { padding: 50px 6vw 70px; text-align: center; color: var(--dim); font-size: 13px; line-height: 1.9; border-top: 1px solid rgba(255,255,255,.06); }
+  @keyframes heroIn { from { transform: translateY(22px); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
 </head>
-<body>
-<div class="landing">
+<body class="landing-page">
+
+<nav class="nav">
+  <img src="icon.svg" alt="">
   <div class="logo">Couch<em>Play</em></div>
-  <p class="tagline">Your free living-room console. One big screen, everyone's phone is a controller.<br>16 games &middot; up to 8 players &middot; no downloads, no accounts.</p>
-  <div class="landing-choices">
-    <button class="choice" onclick="location.href='console.html'">
-      <div class="big" id="icoTv"></div>
-      <h2>Open Console</h2>
-      <p>Put this on the TV, laptop, or any big screen. It creates a room code + QR code and runs the games.</p>
-    </button>
-    <button class="choice" onclick="location.href='controller.html'">
-      <div class="big" id="icoPhone"></div>
-      <h2>Join as Player</h2>
-      <p>Open this on your phone or tablet. Type the room code (or scan the QR on the TV) and it becomes your controller.</p>
-    </button>
+  <div class="sp"></div>
+  <button class="lang-btn" id="langBtn">RU</button>
+  <a class="btn ghost" href="controller.html" id="navJoin">Join as Player</a>
+  <a class="btn" href="console.html" id="navConsole">Open Console</a>
+</nav>
+
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div id="floaters"></div>
+  <img class="mark" src="icon.svg" alt="CouchPlay">
+  <h1 id="heroH">Your living room is <em>the console</em>.</h1>
+  <p class="sub" id="heroSub">CouchPlay turns any big screen into a free game console. Friends scan a QR code and their phones become PlayStation-style controllers. No downloads, no accounts, no cost — just press play.</p>
+  <div class="cta">
+    <a class="btn" href="console.html" id="ctaConsole">Open Console on this screen</a>
+    <a class="btn ghost" href="controller.html" id="ctaJoin">Join with your phone</a>
   </div>
-</div>
+  <div class="stats">
+    <div><b>16</b><span id="stGames">games</span></div>
+    <div><b>8</b><span id="stPlayers">players</span></div>
+    <div><b>0</b><span id="stDownloads">downloads</span></div>
+    <div><b>2</b><span id="stLangs">languages</span></div>
+  </div>
+</header>
+
+<section class="block rv" id="aboutBlock">
+  <h2 id="aboutH">What is CouchPlay?</h2>
+  <p id="aboutP1">CouchPlay is a couch-gaming platform born from a simple idea: everyone already owns a game console — they just don't know it. A TV plus the phones in everyone's pockets is all the hardware a great game night needs.</p>
+  <br>
+  <p id="aboutP2">Open the console page on a big screen and it becomes a PlayStation-style home with a room code. Friends join in seconds from their phone browser. The host picks a game, every phone transforms into the right controller — a joystick with the classic shape buttons, a quiz pad, a drawing canvas, or a full first-person 3D view — and the living room comes alive. Connections run peer-to-peer straight between devices, so it feels instant, and a relay server steps in automatically on strict networks.</p>
+</section>
+
+<section class="block rv">
+  <h2 id="howH">How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3 id="s1h">Open the console</h3><p id="s1p">Put console.html on your TV, laptop or projector. It shows a 4-letter room code and a QR code.</p></div>
+    <div class="step"><div class="n">2</div><h3 id="s2h">Friends join</h3><p id="s2p">Everyone scans the QR or types the code on their phone. Up to 8 players — phones, tablets and laptops all work.</p></div>
+    <div class="step"><div class="n">3</div><h3 id="s3h">Pick and play</h3><p id="s3p">The host picks from 16 games. Every phone morphs into the right controller automatically. The leaderboard tracks the session's champion.</p></div>
+  </div>
+</section>
+
+<section class="block rv">
+  <h2 id="featH">Why it's good</h2>
+  <div class="features" id="featGrid"></div>
+</section>
+
+<section class="block rv">
+  <h2 id="gamesH">The 16 games</h2>
+  <div class="gamegrid" id="gameGrid"></div>
+</section>
+
+<footer class="rv">
+  <div id="footMade">CouchPlay is free forever, runs entirely in your browser, and never asks for an account.</div>
+  <div id="footMusic">Soundtrack: public-domain classical masterpieces (Pachelbel, Beethoven, Mozart, Grieg, Rossini) performed live by the built-in synthesizer.</div>
+</footer>
+
 <script src="js/icons.js"></script>
 <script src="js/i18n.js"></script>
 <script>
-  document.getElementById('icoTv').innerHTML = ICONS.tv;
-  document.getElementById('icoPhone').innerHTML = ICONS.phone;
-  if (I18N.lang === 'ru') {
-    document.querySelector('.tagline').innerHTML = T('tagline') + '<br>16 игр &middot; до 8 игроков &middot; без загрузок и аккаунтов.';
-    const ch = document.querySelectorAll('.choice');
-    ch[0].querySelector('h2').textContent = T('openConsole');
-    ch[0].querySelector('p').textContent = T('openConsoleDesc');
-    ch[1].querySelector('h2').textContent = T('joinPlayer');
-    ch[1].querySelector('p').textContent = T('joinPlayerDesc');
-  }
-  // If someone scanned a QR that points at the root with ?room=CODE, send them to the controller.
+  // QR deep-link straight to the controller
   const room = new URLSearchParams(location.search).get('room');
   if (room) location.replace('controller.html?room=' + encodeURIComponent(room));
+
+  // floating background icons
+  const FL = ['minecraft', 'soccer', 'race', 'tetris', 'flappy', 'bomber', 'snake', 'pong'];
+  document.getElementById('floaters').innerHTML = FL.map((id, i) => {
+    const size = 34 + (i % 3) * 18;
+    const left = 4 + (i * 12.3) % 90;
+    const top = 12 + (i * 23.7) % 70;
+    const dur = 4 + (i % 4);
+    return `<div class="float-ico" style="width:${size}px;height:${size}px;left:${left}%;top:${top}%;animation-duration:${dur}s">${ICONS[id]}</div>`;
+  }).join('');
+
+  // features
+  const FEATS = [
+    ['laser', 'Ultra-low lag', 'Controllers talk to the console directly over peer-to-peer WebRTC — no server in the middle. A relay kicks in automatically when networks are strict.', 'Минимальная задержка', 'Геймпады соединяются с консолью напрямую через P2P WebRTC — без сервера посередине. На строгих сетях автоматически включается ретранслятор.'],
+    ['logo', 'PlayStation-style controllers', 'A real joystick with the classic shape buttons on every phone. Vibration feedback included.', 'Геймпады в стиле PlayStation', 'Настоящий джойстик с классическими фигурными кнопками на каждом телефоне. С вибрацией.'],
+    ['trophy', 'Live leaderboard', 'The console is a PS5-style home screen with player cards and a session leaderboard that updates after every round.', 'Живая таблица лидеров', 'Консоль — домашний экран в стиле PS5 с карточками игроков и таблицей лидеров после каждого раунда.'],
+    ['draw', 'Camera player cards', 'Players can turn on their front camera and appear live on their player card, console-style.', 'Карточки с камерой', 'Игроки могут включить фронтальную камеру и появиться на своей карточке, как на настоящей консоли.'],
+    ['trivia', 'Classical soundtrack', 'Pachelbel, Beethoven, Mozart, Grieg and Rossini — public-domain masterpieces performed by the built-in synthesizer, with a music bar to control them.', 'Классический саундтрек', 'Пахельбель, Бетховен, Моцарт, Григ и Россини — шедевры общественного достояния в исполнении встроенного синтезатора, с музыкальной панелью.'],
+    ['tv', 'Made for smart TVs', 'Works in the webOS / Tizen TV browser. Auto performance mode keeps every game smooth on TV hardware.', 'Создано для смарт-ТВ', 'Работает в браузере webOS / Tizen. Авторежим производительности сохраняет плавность на ТВ.'],
+  ];
+  const GAME_LIST = [
+    ['minecraft', 'CraftWorld 3D'], ['obby', 'Obby Rush 3D'], ['flappy', 'Flappy Royale'], ['snake', 'Snake.io'],
+    ['tanks', 'Tank Battle'], ['bomber', 'Bomber Blast'], ['laser', 'Laser Tag'], ['trivia', 'Trivia Show'],
+    ['draw', 'Draw & Guess'], ['reaction', 'Reaction Duel'], ['soccer', 'Rocket Soccer'], ['race', 'Kart Dash'],
+    ['pong', 'Pong Royale'], ['tetris', 'Tetris Battle'], ['blob', 'Blob Arena'], ['dodge', 'Dodgeball Panic'],
+  ];
+  function render() {
+    const ru = I18N.lang === 'ru';
+    document.getElementById('featGrid').innerHTML = FEATS.map(f =>
+      `<div class="feat"><div class="fi">${ICONS[f[0]]}</div><h3>${ru ? f[3] : f[1]}</h3><p>${ru ? f[4] : f[2]}</p></div>`).join('');
+    document.getElementById('gameGrid').innerHTML = GAME_LIST.map(g =>
+      `<div class="g">${ICONS[g[0]]}<br>${ru ? I18N.game(g[0], { title: g[1], desc: '' }).title : g[1]}</div>`).join('');
+    document.getElementById('langBtn').textContent = ru ? 'EN' : 'RU';
+    if (ru) {
+      document.getElementById('navJoin').textContent = 'Присоединиться';
+      document.getElementById('navConsole').textContent = 'Открыть консоль';
+      document.getElementById('heroH').innerHTML = 'Ваша гостиная — <em>это консоль</em>.';
+      document.getElementById('heroSub').textContent = 'CouchPlay превращает любой большой экран в бесплатную игровую консоль. Друзья сканируют QR-код — и их телефоны становятся геймпадами в стиле PlayStation. Без загрузок, аккаунтов и оплаты.';
+      document.getElementById('ctaConsole').textContent = 'Открыть консоль на этом экране';
+      document.getElementById('ctaJoin').textContent = 'Присоединиться с телефона';
+      document.getElementById('stGames').textContent = 'игр';
+      document.getElementById('stPlayers').textContent = 'игроков';
+      document.getElementById('stDownloads').textContent = 'загрузок';
+      document.getElementById('stLangs').textContent = 'языка';
+      document.getElementById('aboutH').textContent = 'Что такое CouchPlay?';
+      document.getElementById('aboutP1').textContent = 'CouchPlay — платформа для игр на диване, рождённая из простой идеи: у каждого уже есть игровая консоль — просто никто об этом не знает. Телевизор плюс телефоны в карманах — вот и всё оборудование для отличного игрового вечера.';
+      document.getElementById('aboutP2').textContent = 'Откройте страницу консоли на большом экране — и она превратится в домашний экран в стиле PlayStation с кодом комнаты. Друзья подключаются за секунды из браузера телефона. Хост выбирает игру, каждый телефон превращается в нужный геймпад — джойстик с фигурными кнопками, панель викторины, холст для рисования или полноценный 3D-вид от первого лица. Соединение идёт напрямую между устройствами (P2P), поэтому всё мгновенно, а на строгих сетях автоматически включается сервер-ретранслятор.';
+      document.getElementById('howH').textContent = 'Как это работает';
+      document.getElementById('s1h').textContent = 'Откройте консоль';
+      document.getElementById('s1p').textContent = 'Откройте console.html на телевизоре, ноутбуке или проекторе. Появится 4-буквенный код комнаты и QR-код.';
+      document.getElementById('s2h').textContent = 'Друзья подключаются';
+      document.getElementById('s2p').textContent = 'Каждый сканирует QR или вводит код на телефоне. До 8 игроков — телефоны, планшеты и ноутбуки.';
+      document.getElementById('s3h').textContent = 'Выбирайте и играйте';
+      document.getElementById('s3p').textContent = 'Хост выбирает из 16 игр. Каждый телефон автоматически превращается в нужный геймпад. Таблица лидеров определяет чемпиона вечера.';
+      document.getElementById('featH').textContent = 'Почему это круто';
+      document.getElementById('gamesH').textContent = '16 игр';
+      document.getElementById('footMade').textContent = 'CouchPlay бесплатен навсегда, работает полностью в браузере и никогда не просит аккаунт.';
+      document.getElementById('footMusic').textContent = 'Саундтрек: классические шедевры общественного достояния (Пахельбель, Бетховен, Моцарт, Григ, Россини) в живом исполнении встроенного синтезатора.';
+    }
+  }
+  render();
+  document.getElementById('langBtn').onclick = () => {
+    I18N.set(I18N.lang === 'ru' ? 'en' : 'ru');
+    location.reload();
+  };
+
+  // reveal-on-scroll animation
+  const io = new IntersectionObserver((es) => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.rv').forEach(el => io.observe(el));
 </script>
 </body>
 </html>

@@ -58,6 +58,7 @@ registerGame({
           hitPad.lives--;
           const p = G.players.find(q => q.pid === owner);
           Draw2.boom(b.x, b.y, p ? p.color : '#fff', 18, 260, 0.7);
+          AudioSys.sfx('boom');
           if (p) G.vib(p, 200);
           if (hitPad.lives <= 0) {
             hitPad.alive = false;

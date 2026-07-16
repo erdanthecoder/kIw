@@ -118,6 +118,7 @@ registerGame({
           if (t.hp <= 0) {
             Draw2.boom(t.x, t.y, '#ff8c3a', 26, 300, 0.8, 6);
             Draw2.boom(t.x, t.y, '#5a5a5a', 14, 160, 1.1, 7);
+            AudioSys.sfx('boom');
             S.scorch.push({ x: t.x, y: t.y, r: rand(24, 34) });
             if (S.scorch.length > 24) S.scorch.shift();
             t.respawn = 2.2; t.hp = 3;

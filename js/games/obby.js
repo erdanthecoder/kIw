@@ -19,7 +19,7 @@ registerGame({
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block';
     G.glWrap.appendChild(canvas);
-    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: !PERF.low });
     this.resize(G);
     window.addEventListener('resize', this._rs = () => this.resize(G));
 

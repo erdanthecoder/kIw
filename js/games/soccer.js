@@ -136,6 +136,7 @@ registerGame({
     S.score[team]++;
     S.goalFlash = 1.6;
     S.goalTeam = team;
+    AudioSys.sfx('goal');
     const gx = team === 1 ? this.F.x1 : this.F.x2;
     Draw2.boom(gx, (this.GT + this.GB) / 2, team === 0 ? '#2f9bff' : '#ff4655', 30, 400, 1, 6);
     Draw2.confetti(640, 80, 60);

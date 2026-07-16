@@ -125,6 +125,7 @@ registerGame({
         if (other) other.fuse = Math.min(other.fuse, 0.05);
       }
     }
+    AudioSys.sfx('boom');
     for (const [gx, gy] of cells) S.blasts.push({ gx, gy, t: 0.45 });
   },
   draw(ctx, G) {

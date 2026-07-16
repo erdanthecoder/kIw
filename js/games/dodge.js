@@ -50,6 +50,7 @@ registerGame({
           u.alive = false;
           S.deathOrder.push(p.pid);
           Draw2.boom(u.x, u.y, p.color, 22, 280, 0.8);
+          AudioSys.sfx('boom');
           G.vib(p, 300);
           break;
         }

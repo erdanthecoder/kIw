@@ -1,4 +1,27 @@
 // CouchPlay controller — the player's phone/tablet/laptop becomes the gamepad.
+// PlayStation-style face buttons (their shape language, drawn from scratch).
+const PS_SHAPES = {
+  cross: '<svg viewBox="0 0 24 24" fill="none"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="#7db9ff" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  circle: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7.2" stroke="#ff6673" stroke-width="2.6"/></svg>',
+  square: '<svg viewBox="0 0 24 24" fill="none"><rect x="5.8" y="5.8" width="12.4" height="12.4" stroke="#ffa3d7" stroke-width="2.6"/></svg>',
+  triangle: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 5.6l7.6 13H4.4z" stroke="#2fd573" stroke-width="2.6" stroke-linejoin="round"/></svg>',
+};
+function psDiamond(opts) {
+  // opts: {a: {label, rep}, b: {label, rep}} — cross = primary, circle = secondary
+  const a = opts.a, b = opts.b;
+  return `
+    <div class="ps-diamond">
+      <button class="ps-btn pos-t off" tabindex="-1">${PS_SHAPES.triangle}</button>
+      <button class="ps-btn pos-l off" tabindex="-1">${PS_SHAPES.square}</button>
+      <button class="ps-btn pos-r ${b ? '' : 'off'}" ${b ? `data-btn="b" ${b.rep ? `data-rep="${b.rep}"` : ''}` : 'tabindex="-1"'}>${PS_SHAPES.circle}</button>
+      <button class="ps-btn pos-b ${a ? '' : 'off'}" ${a ? `data-btn="a" ${a.rep ? `data-rep="${a.rep}"` : ''}` : 'tabindex="-1"'}>${PS_SHAPES.cross}</button>
+    </div>
+    <div class="act-label">
+      ${a ? `<span>${PS_SHAPES.cross} ${esc(a.label)}</span>` : ''}
+      ${b ? `<span>${PS_SHAPES.circle} ${esc(b.label)}</span>` : ''}
+    </div>`;
+}
+
 const Ctrl = {
   conn: null,
   me: null,           // {slot, color, name}
@@ -132,15 +155,14 @@ const Ctrl = {
     const msgBar = `<div class="pad-msg" id="padMsg">${esc(m.msg || '')}</div>`;
 
     if (m.s === 'stick' || m.s === 'stick1' || m.s === 'stick2') {
-      const btns = [];
-      if (m.s !== 'stick') btns.push({ id: 'a', cls: 'a', label: m.a || 'A', sub: m.asub || '', rep: m.arep });
-      if (m.s === 'stick2') btns.push({ id: 'b', cls: 'b', label: m.b || 'B', sub: m.bsub || '', rep: m.brep });
+      const a = m.s !== 'stick' ? { label: m.a || 'A', rep: m.arep } : null;
+      const b = m.s === 'stick2' ? { label: m.b || 'B', rep: m.brep } : null;
       pad.innerHTML = msgBar + `
         <div class="stick-zone" id="stickZone" style="${m.s === 'stick' ? 'width:100%' : ''}">
-          <div class="stick-base" id="stickBase"></div><div class="stick-nub" id="stickNub"></div>
+          <div class="stick-base2" id="stickBase2"><div class="stick-nub2" id="stickNub2"></div></div>
         </div>
-        ${btns.length ? `<div class="btn-zone">${btns.map(b =>
-          `<button class="pad-btn ${b.cls}" data-btn="${b.id}" ${b.rep ? `data-rep="${b.rep}"` : ''}>${esc(b.label)}${b.sub ? `<small>${esc(b.sub)}</small>` : ''}</button>`).join('')}</div>` : ''}`;
+        ${a ? `<div class="btn-zone ps-zone">${psDiamond({ a, b })}</div>` : ''}
+        <div class="ctrl-grip"></div>`;
       this.bindStick();
       this.bindButtons();
 
@@ -155,7 +177,8 @@ const Ctrl = {
           <button data-btn="l" data-rep="170">◀</button><button class="blank"></button><button data-btn="r" data-rep="170">▶</button>
           <button class="blank"></button><button data-btn="d" data-rep="170">▼</button><button class="blank"></button>
         </div></div>
-        <div class="btn-zone" style="width:44%"><button class="pad-btn a" data-btn="a">${esc(m.a || 'A')}${m.asub ? `<small>${esc(m.asub)}</small>` : ''}</button></div>`;
+        <div class="btn-zone ps-zone" style="width:44%">${psDiamond({ a: { label: m.a || 'A' } })}</div>
+        <div class="ctrl-grip"></div>`;
       this.bindButtons();
 
     } else if (m.s === 'quiz') {
@@ -220,32 +243,41 @@ const Ctrl = {
   },
 
   bindStick() {
+    // fixed joystick with a visible base, like a real console stick
     const zone = document.getElementById('stickZone');
-    const base = document.getElementById('stickBase');
-    const nub = document.getElementById('stickNub');
-    let active = null, cx = 0, cy = 0;
-    const R = 60;
+    const base = document.getElementById('stickBase2');
+    const nub = document.getElementById('stickNub2');
+    let active = null;
+    const R = 52;
+    const center = () => {
+      const r = base.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+    const apply = (e) => {
+      const c = center();
+      let dx = e.clientX - c.x, dy = e.clientY - c.y;
+      const d = Math.hypot(dx, dy);
+      if (d > R) { dx = dx / d * R; dy = dy / d * R; }
+      nub.style.transform = `translate(${dx}px, ${dy}px)`;
+      this.stick.x = +(dx / R).toFixed(2);
+      this.stick.y = +(dy / R).toFixed(2);
+    };
     zone.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      active = e.pointerId; cx = e.clientX; cy = e.clientY;
+      active = e.pointerId;
       zone.setPointerCapture(e.pointerId);
-      base.style.display = nub.style.display = 'block';
-      base.style.left = (cx - 75) + 'px'; base.style.top = (cy - 75) + 'px';
-      nub.style.left = (cx - 32) + 'px'; nub.style.top = (cy - 32) + 'px';
+      nub.classList.add('live');
+      apply(e);
     });
     zone.addEventListener('pointermove', (e) => {
       if (e.pointerId !== active) return;
-      let dx = e.clientX - cx, dy = e.clientY - cy;
-      const d = Math.hypot(dx, dy);
-      if (d > R) { dx = dx / d * R; dy = dy / d * R; }
-      nub.style.left = (cx + dx - 32) + 'px'; nub.style.top = (cy + dy - 32) + 'px';
-      this.stick.x = +(dx / R).toFixed(2);
-      this.stick.y = +(dy / R).toFixed(2);
+      apply(e);
     });
     const end = (e) => {
       if (e.pointerId !== active) return;
       active = null;
-      base.style.display = nub.style.display = 'none';
+      nub.classList.remove('live');
+      nub.style.transform = '';
       this.stick.x = 0; this.stick.y = 0;
     };
     zone.addEventListener('pointerup', end);

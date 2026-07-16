@@ -96,6 +96,7 @@ registerGame({
             k.done = true;
             S.finished.push(p.pid);
             Draw2.boom(k.x, k.y, p.color, 24, 300, 0.9);
+            AudioSys.sfx('goal');
             G.vib(p, 300);
             G.toast(T('finishedToast', p.name, S.finished.length));
           }

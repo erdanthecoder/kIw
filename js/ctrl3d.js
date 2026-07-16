@@ -26,7 +26,7 @@ const Ctrl3D = {
     const canvas = document.getElementById('c3d');
     if (!this.renderer) {
       this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-      this.renderer.setPixelRatio(Math.min(1.6, window.devicePixelRatio));
+      this.renderer.setPixelRatio(Math.min(PERF.low ? 1 : 1.6, window.devicePixelRatio));
     }
     this.scene = E3D.makeScene(this.mode === 'obby' ? 0xe89b6a : 0x87b7e8);
     this.camera = new THREE.PerspectiveCamera(78, 1, 0.1, 300);

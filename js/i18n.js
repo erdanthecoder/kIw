@@ -11,6 +11,9 @@ const I18N = (() => {
       checkCode: 'Enter the room code shown on the TV.', roomFull: 'Room is full (8 players max).', connLost: 'Connection lost — join again.',
       youreIn: 'You\'re in. Look at the big screen.<br>The host picks the game — your controller will change automatically.',
       cameraOn: 'Camera avatar: ON', cameraOff: 'Enable camera avatar',
+      settings: 'SETTINGS', music: 'Music', sfxLabel: 'Sound effects', performance: 'Performance',
+      auto: 'Auto', high: 'High', low: 'Low', close: 'Close', perfApplied: 'Performance mode updated',
+      perfNote: 'Auto lowers effects on smart TVs (webOS, Tizen) so games stay smooth. All music is composed by CouchPlay itself — original, copyright-free.',
       // console chrome
       joinRoom: 'JOIN THE ROOM', players: 'Players', wins: 'wins', win: 'win',
       leaderboard: 'LEADERBOARD', noPlayers: 'No players yet — scan the QR or enter the code on your phone.',
@@ -54,6 +57,9 @@ const I18N = (() => {
       checkCode: 'Введите код комнаты, показанный на ТВ.', roomFull: 'Комната заполнена (максимум 8 игроков).', connLost: 'Связь потеряна — подключитесь снова.',
       youreIn: 'Вы в игре. Смотрите на большой экран.<br>Хост выбирает игру — ваш геймпад изменится автоматически.',
       cameraOn: 'Камера-аватар: ВКЛ', cameraOff: 'Включить камеру-аватар',
+      settings: 'НАСТРОЙКИ', music: 'Музыка', sfxLabel: 'Звуковые эффекты', performance: 'Производительность',
+      auto: 'Авто', high: 'Высокая', low: 'Низкая', close: 'Закрыть', perfApplied: 'Режим производительности обновлён',
+      perfNote: 'Авто снижает эффекты на смарт-ТВ (webOS, Tizen), чтобы игры шли плавно. Вся музыка сочинена самим CouchPlay — оригинальная, без авторских прав.',
       joinRoom: 'ВХОД В КОМНАТУ', players: 'Игроки', wins: 'побед', win: 'победа',
       leaderboard: 'ТАБЛИЦА ЛИДЕРОВ', noPlayers: 'Пока нет игроков — отсканируйте QR или введите код на телефоне.',
       hint: 'Кликните по игре или стрелки + Enter. Игрок 1 может листать джойстиком и нажать A.',
@@ -116,7 +122,7 @@ const I18N = (() => {
     get lang() { return lang; },
     set(l) { lang = D[l] ? l : 'en'; localStorage.setItem('cp-lang', lang); },
     t(key, ...a) {
-      let s = (D[lang] && D[lang][key]) ?? D.en[key] ?? key;
+      let s = (D[lang] && D[lang][key] !== undefined) ? D[lang][key] : (D.en[key] !== undefined ? D.en[key] : key);
       if (Array.isArray(s)) return s;
       a.forEach((v, i) => { s = s.replace('{' + i + '}', v); });
       return s;

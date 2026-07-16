@@ -1,4 +1,35 @@
 // CouchPlay — shared helpers for console + controller
+
+// Older TV browsers (webOS/Tizen ship old Chromium) lack ctx.roundRect — polyfill it.
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    else if (Array.isArray(r)) { while (r.length < 4) r.push(r[r.length - 1] || 0); }
+    else r = [0, 0, 0, 0];
+    const m = Math.min(Math.abs(w) / 2, Math.abs(h) / 2);
+    r = r.map(v => Math.min(v, m));
+    this.moveTo(x + r[0], y);
+    this.lineTo(x + w - r[1], y);
+    this.arcTo(x + w, y, x + w, y + r[1], r[1]);
+    this.lineTo(x + w, y + h - r[2]);
+    this.arcTo(x + w, y + h, x + w - r[2], y + h, r[2]);
+    this.lineTo(x + r[3], y + h);
+    this.arcTo(x, y + h, x, y + h - r[3], r[3]);
+    this.lineTo(x, y + r[0]);
+    this.arcTo(x, y, x + r[0], y, r[0]);
+    this.closePath();
+    return this;
+  };
+}
+
+// Performance profile: TVs and weak devices get reduced effects.
+// 'auto' detects smart-TV user agents; override via settings (cp-perf).
+const PERF = {
+  mode: (typeof localStorage !== 'undefined' && localStorage.getItem('cp-perf')) || 'auto',
+  isTV: typeof navigator !== 'undefined' && /web0s|webos|smart-tv|smarttv|tizen|netcast|viera|bravia|googletv|hbbtv/i.test(navigator.userAgent),
+  get low() { return this.mode === 'low' || (this.mode === 'auto' && this.isTV); },
+  set(mode) { this.mode = mode; try { localStorage.setItem('cp-perf', mode); } catch (e) {} },
+};
 const COLORS = ['#ff4655', '#2f9bff', '#2fd573', '#ffcf3f', '#b06cff', '#ff8c3a', '#2fe0d0', '#ff7ab8'];
 const COLOR_NAMES = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink'];
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I, O, 0, 1

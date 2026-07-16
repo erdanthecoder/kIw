@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CouchPlay Console</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f9bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9h12a4 4 0 0 1 4 4v2a3 3 0 0 1-5.5 1.7L15 15H9l-1.5 1.7A3 3 0 0 1 2 15v-2a4 4 0 0 1 4-4z'/></svg>">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,6 +16,7 @@
     <div class="game-row" id="gameRow"></div>
     <div class="ps-status">
       <button id="langBtn" class="lang-btn">RU</button>
+      <button id="setBtn" class="lang-btn" aria-label="Settings">&#9881;</button>
       <span class="net-dot" id="netBadge" title=""></span>
       <span id="clock"></span>
     </div>
@@ -69,6 +70,28 @@
   </div>
   <button id="backBtn" onclick="App.toLobby()">Back to lobby</button>
 </div>
+<div class="overlay" id="settingsOverlay">
+  <div class="side-card settings-card">
+    <h3 id="setHead">SETTINGS</h3>
+    <label class="set-row"><span id="setMusic">Music</span>
+      <input type="range" id="volMusic" min="0" max="100" step="5"></label>
+    <label class="set-row"><span id="setSfx">Sound effects</span>
+      <input type="range" id="volSfx" min="0" max="100" step="5"></label>
+    <div class="set-row"><span id="setPerf">Performance</span>
+      <div class="seg" id="perfSeg">
+        <button data-v="auto">Auto</button><button data-v="high">High</button><button data-v="low">Low</button>
+      </div></div>
+    <p class="set-note" id="setNote"></p>
+    <button class="close-btn" id="setClose">Close</button>
+  </div>
+</div>
+<div id="musicBar">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5.5l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></svg>
+  <span id="mbName">&mdash;</span>
+  <button id="mbPrev" aria-label="Previous">&#9198;</button>
+  <button id="mbPlay" aria-label="Pause">&#9208;</button>
+  <button id="mbNext" aria-label="Next">&#9197;</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="lib/peerjs.min.js"></script>
@@ -76,6 +99,7 @@
 <script src="lib/three.min.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/audio.js"></script>
 <script src="js/common.js"></script>
 <script src="js/net.js"></script>
 <script src="js/engine3d.js"></script>

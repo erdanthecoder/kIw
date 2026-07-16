@@ -4,6 +4,13 @@ const GAMES = [];
 function registerGame(def) { GAMES.push(def); }
 
 // hero glow accent per game
+const MOODS_BY_GAME = {
+  minecraft: 'chill', obby: 'chill', flappy: 'race', snake: 'chill',
+  tanks: 'action', bomber: 'action', laser: 'action', trivia: 'party',
+  draw: 'party', reaction: 'party', soccer: 'party', race: 'race',
+  pong: 'chill', tetris: 'action', blob: 'chill', dodge: 'action',
+};
+
 const ACCENTS = {
   minecraft: '#4caf50', obby: '#ff9800', flappy: '#ffca28', snake: '#66bb6a',
   tanks: '#a1887f', bomber: '#ef5350', laser: '#ab47bc', trivia: '#7e57c2',
@@ -21,6 +28,17 @@ const App = {
   lastTs: 0,
 
   async boot() {
+    // browsers only allow audio after a user gesture
+    const unlock = () => {
+      AudioSys.unlock();
+      AudioSys.playMusic(this.state === 'lobby' || this.state === 'results' ? 'menu' : (MOODS_BY_GAME[this.game && this.game.id] || 'menu'));
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    this.bindSettings();
+    this.bindMusicBar();
     this.applyLang();
     this.renderRow();
     this.renderHero();
@@ -66,6 +84,50 @@ const App = {
     document.getElementById('backBtn').textContent = T('backToLobby');
     document.getElementById('endBtn').textContent = T('endGame');
     document.getElementById('psHint').textContent = T('hint');
+    document.getElementById('setHead').textContent = T('settings');
+    document.getElementById('setMusic').textContent = T('music');
+    document.getElementById('setSfx').textContent = T('sfxLabel');
+    document.getElementById('setPerf').textContent = T('performance');
+    document.getElementById('setNote').textContent = T('perfNote');
+    document.getElementById('setClose').textContent = T('close');
+    const segLabels = { auto: T('auto'), high: T('high'), low: T('low') };
+    document.querySelectorAll('#perfSeg button').forEach(b => { b.textContent = segLabels[b.dataset.v]; });
+  },
+
+  bindMusicBar() {
+    const bar = document.getElementById('musicBar');
+    const name = document.getElementById('mbName');
+    AudioSys.setOnTrack((p) => {
+      if (p) name.textContent = p.composer + ' — ' + p.name;
+      bar.classList.toggle('mb-paused', AudioSys.paused);
+    });
+    document.getElementById('mbPrev').onclick = (e) => { e.stopPropagation(); AudioSys.unlock(); AudioSys.next(-1); };
+    document.getElementById('mbNext').onclick = (e) => { e.stopPropagation(); AudioSys.unlock(); AudioSys.next(1); };
+    document.getElementById('mbPlay').onclick = (e) => {
+      e.stopPropagation();
+      AudioSys.unlock();
+      const paused = AudioSys.togglePause();
+      document.getElementById('mbPlay').innerHTML = paused ? '&#9205;' : '&#9208;';
+    };
+  },
+
+  bindSettings() {
+    const ov = document.getElementById('settingsOverlay');
+    document.getElementById('setBtn').onclick = () => { ov.classList.add('active'); };
+    document.getElementById('setClose').onclick = () => { ov.classList.remove('active'); };
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.classList.remove('active'); });
+    const vm = document.getElementById('volMusic');
+    const vs = document.getElementById('volSfx');
+    vm.value = Math.round(AudioSys.getVol('music') * 100);
+    vs.value = Math.round(AudioSys.getVol('sfx') * 100);
+    vm.oninput = () => AudioSys.setVol('music', vm.value / 100);
+    vs.oninput = () => { AudioSys.setVol('sfx', vs.value / 100); AudioSys.sfx('pop'); };
+    const seg = document.getElementById('perfSeg');
+    const paint = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.v === PERF.mode));
+    paint();
+    seg.querySelectorAll('button').forEach(b => {
+      b.onclick = () => { PERF.set(b.dataset.v); paint(); this.toast(T('perfApplied')); };
+    });
   },
 
   onReady({ code, modes }) {
@@ -220,6 +282,7 @@ const App = {
 
   moveSel(d) {
     this.selIdx = clamp(this.selIdx + d, 0, GAMES.length - 1);
+    AudioSys.sfx('move');
     this.renderRow();
     this.renderHero();
   },
@@ -283,18 +346,22 @@ const App = {
       toast(msg) { self.toast(msg); },
     };
 
+    AudioSys.sfx('select');
+    AudioSys.playMusic(MOODS_BY_GAME[def.id] || 'action');
     const co = document.getElementById('countOverlay');
     const num = document.getElementById('countNum');
     document.getElementById('countGame').textContent = meta.title;
     co.classList.add('active');
     let n = 3;
     num.textContent = n;
+    AudioSys.sfx('count');
     const iv = setInterval(() => {
       n--;
-      if (n > 0) { num.textContent = n; return; }
+      if (n > 0) { num.textContent = n; AudioSys.sfx('count'); return; }
       clearInterval(iv);
       co.classList.remove('active');
       if (this.state !== 'count') return;
+      AudioSys.sfx('go');
       this.state = 'game';
       this.G.time = 0;
       def.init(this.G);
@@ -327,6 +394,8 @@ const App = {
     if (this.state !== 'game') return;
     this.cleanupGame();
     this.state = 'results';
+    AudioSys.sfx('win');
+    AudioSys.playMusic('results');
     const podium = document.getElementById('podium');
     const places = T('place');
     podium.innerHTML = (rows || []).map((r, i) => {
@@ -355,6 +424,7 @@ const App = {
   },
 
   toLobby() {
+    AudioSys.playMusic('menu');
     clearTimeout(this._resT);
     if (this.state === 'game' || this.state === 'count') this.cleanupGame();
     this.state = 'lobby';
@@ -428,7 +498,7 @@ const Draw2 = {
   },
 
   orb(ctx, x, y, r, color, glowing = false) {
-    if (glowing) { ctx.shadowColor = color; ctx.shadowBlur = r * 1.6; }
+    if (glowing && !PERF.low) { ctx.shadowColor = color; ctx.shadowBlur = r * 1.6; }
     const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
     g.addColorStop(0, this.lighten(color, 0.55));
     g.addColorStop(0.55, color);
@@ -476,6 +546,7 @@ const Draw2 = {
   },
 
   boom(x, y, color, n = 16, speed = 240, life = 0.55, size = 5) {
+    if (PERF.low) n = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2), sp = rand(speed * 0.3, speed);
       this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(life * 0.5, life), max: life, color, size: rand(size * 0.5, size) });
@@ -489,6 +560,7 @@ const Draw2 = {
     }
   },
   trail(x, y, color, size = 3, life = 0.3) {
+    if (PERF.low && this.parts.length > 120) return;
     this.parts.push({ x, y, vx: rand(-15, 15), vy: rand(-15, 15), life, max: life, color, size });
   },
   tick(dt) {

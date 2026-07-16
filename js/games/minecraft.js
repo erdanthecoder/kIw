@@ -13,7 +13,7 @@ registerGame({
     };
     S.scene = E3D.makeScene();
     S.world = new E3D.World(seed);
-    S.world.shadows = true;
+    S.world.shadows = !PERF.low;
     S.world.buildAll(S.scene);
     E3D.decorate(S.world, S.scene);
     S.clouds = E3D.makeClouds(seed);
@@ -23,8 +23,8 @@ registerGame({
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block';
     G.glWrap.appendChild(canvas);
-    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    E3D.enableShadows(S.renderer, S.scene);
+    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: !PERF.low });
+    if (!PERF.low) E3D.enableShadows(S.renderer, S.scene);
     this.resize(G);
     window.addEventListener('resize', this._rs = () => this.resize(G));
 
