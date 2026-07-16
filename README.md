@@ -66,7 +66,21 @@ npm start          # http://localhost:8080
 Open `http://<your-ip>:8080/console.html` on the big screen; phones on the same
 Wi-Fi join at `http://<your-ip>:8080/controller.html` (the QR code handles this).
 
-### Option B — 100% static, zero server (e.g. GitHub Pages)
+### Option B — the live site (GitHub Pages)
+
+The repo auto-publishes itself: every push mirrors the site to the `gh-pages`
+branch via GitHub Actions. To turn the public URL on (one time, ~10 seconds):
+
+1. Open **Settings → Pages** in this repo.
+2. Under **Build and deployment → Source**, pick **Deploy from a branch**.
+3. Choose branch **`gh-pages`**, folder **`/ (root)`**, press **Save**.
+
+A minute later the site is live at **https://erdanthecoder.github.io/kIw/**
+(landing page; `/console.html` for the TV, `/controller.html` for phones) —
+with HTTPS included, which phones need for vibration and camera avatars.
+After that, every push updates the live site automatically.
+
+### Option C — any static host
 
 Host the repo as static files and open `console.html`. P2P handles everything —
 no backend needed. (The relay fallback simply won't be available.)
