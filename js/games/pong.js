@@ -22,6 +22,17 @@ registerGame({
     this.S.serveT = 1.2;
     this.S.hist = [];
   },
+  bot(p, G, dt) {
+    const S = this.S, pad = S.pads.get(p.pid);
+    if (!pad || !pad.alive || !S.ball) return;
+    let ang = Math.atan2(S.ball.y - this.CY, S.ball.x - this.CX);
+    if (ang < 0) ang += Math.PI * 2;
+    let rel = ang - pad.segStart;
+    while (rel < 0) rel += Math.PI * 2;
+    const target = rel < pad.segLen ? rel / pad.segLen : 0.5;
+    p.in.x = clamp((target - pad.pos) * 5, -1, 1) * 0.85;
+    p.in.y = 0;
+  },
   update(dt, G) {
     const S = this.S;
     for (const p of G.players) {

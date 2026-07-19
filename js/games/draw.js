@@ -9,7 +9,7 @@ registerGame({
   S: null, cvs: null,
   init(G) {
     this.S = {
-      order: shuffle(G.players.map(p => p.pid)).slice(0, 6),
+      order: shuffle(G.players.filter(p => !p.isBot).map(p => p.pid)).slice(0, 6),
       ri: -1, phase: 'next', phaseT: 1,
       scores: new Map(G.players.map(p => [p.pid, 0])),
       word: '', options: [], guessed: new Map(), drawer: null,
@@ -63,6 +63,16 @@ registerGame({
       S.scores.set(p.pid, (S.scores.get(p.pid) || 0) + 100 + speed);
       S.scores.set(S.drawer, (S.scores.get(S.drawer) || 0) + 40);
       G.vib(p, 80);
+    }
+  },
+  bot(p, G, dt) {
+    const S = this.S;
+    if (S.phase !== 'draw' || p.pid === S.drawer || S.guessed.has(p.pid)) return;
+    if (p.dri !== S.ri) { p.dri = S.ri; p.dAcc = 0; p.dDelay = rand(8, 30); }
+    p.dAcc += dt;
+    if (p.dAcc >= p.dDelay) {
+      const i = Math.random() < 0.35 ? S.options.indexOf(S.word) : irand(0, 3);
+      this.onBtn(p, i, G);
     }
   },
   update(dt, G) {

@@ -12,6 +12,8 @@ const I18N = (() => {
       youreIn: 'You\'re in. Look at the big screen.<br>The host picks the game — your controller will change automatically.',
       cameraOn: 'Camera avatar: ON', cameraOff: 'Enable camera avatar',
       settings: 'SETTINGS', music: 'Music', sfxLabel: 'Sound effects', performance: 'Performance',
+      bots: 'AI bots', on: 'On', off: 'Off',
+      botNames: ['Robo', 'Turbo', 'Ace', 'Nova', 'Zed', 'Pixel', 'Maxi', 'Rex'],
       auto: 'Auto', high: 'High', low: 'Low', close: 'Close', perfApplied: 'Performance mode updated',
       perfNote: 'Auto lowers effects on smart TVs (webOS, Tizen) so games stay smooth. All music is composed by CouchPlay itself — original, copyright-free.',
       // console chrome
@@ -58,6 +60,8 @@ const I18N = (() => {
       youreIn: 'Вы в игре. Смотрите на большой экран.<br>Хост выбирает игру — ваш геймпад изменится автоматически.',
       cameraOn: 'Камера-аватар: ВКЛ', cameraOff: 'Включить камеру-аватар',
       settings: 'НАСТРОЙКИ', music: 'Музыка', sfxLabel: 'Звуковые эффекты', performance: 'Производительность',
+      bots: 'ИИ-боты', on: 'Вкл', off: 'Выкл',
+      botNames: ['Робик', 'Турбо', 'Ас', 'Нова', 'Зед', 'Пиксель', 'Макси', 'Рекс'],
       auto: 'Авто', high: 'Высокая', low: 'Низкая', close: 'Закрыть', perfApplied: 'Режим производительности обновлён',
       perfNote: 'Авто снижает эффекты на смарт-ТВ (webOS, Tizen), чтобы игры шли плавно. Вся музыка сочинена самим CouchPlay — оригинальная, без авторских прав.',
       joinRoom: 'ВХОД В КОМНАТУ', players: 'Игроки', wins: 'побед', win: 'победа',

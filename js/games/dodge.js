@@ -20,6 +20,21 @@ registerGame({
     const sp = rand(180, 260);
     S.balls.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: rand(14, 26), fade: 0.8, rot: rand(0, 6) });
   },
+  bot(p, G, dt) {
+    const S = this.S, u = S.units.get(p.pid);
+    if (!u || !u.alive) return;
+    let fx = (640 - u.x) / 640 * 0.35, fy = (360 - u.y) / 360 * 0.35;
+    for (const b of S.balls) {
+      const d = dist(u.x, u.y, b.x, b.y);
+      if (d < 170 && d > 1) {
+        const w = (170 - d) / 170 * 2.4;
+        fx -= (b.x - u.x) / d * w;
+        fy -= (b.y - u.y) / d * w;
+      }
+    }
+    const m = Math.hypot(fx, fy) || 1;
+    p.in.x = fx / m; p.in.y = fy / m;
+  },
   update(dt, G) {
     const S = this.S;
     S.spawnT -= dt;

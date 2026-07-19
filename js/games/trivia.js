@@ -86,6 +86,16 @@ registerGame({
       G.vib(p, 30);
     }
   },
+  bot(p, G, dt) {
+    const S = this.S;
+    if (S.phase !== 'question' || S.answers.has(p.pid)) return;
+    if (p.qi !== S.qi) { p.qi = S.qi; p.acc = 0; p.delay = rand(2, 8); }
+    p.acc += dt;
+    if (p.acc >= p.delay) {
+      const correct = S.qs[S.qi][2];
+      this.onBtn(p, Math.random() < 0.6 ? correct : irand(0, 3), G);
+    }
+  },
   update(dt, G) {
     const S = this.S;
     S.phaseT -= dt;

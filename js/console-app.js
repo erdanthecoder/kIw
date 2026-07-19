@@ -88,6 +88,9 @@ const App = {
     document.getElementById('setMusic').textContent = T('music');
     document.getElementById('setSfx').textContent = T('sfxLabel');
     document.getElementById('setPerf').textContent = T('performance');
+    document.getElementById('setBots').textContent = T('bots');
+    const botLabels = { 1: T('on'), 0: T('off') };
+    document.querySelectorAll('#botSeg button').forEach(b => { b.textContent = botLabels[b.dataset.v]; });
     document.getElementById('setNote').textContent = T('perfNote');
     document.getElementById('setClose').textContent = T('close');
     const segLabels = { auto: T('auto'), high: T('high'), low: T('low') };
@@ -128,6 +131,38 @@ const App = {
     seg.querySelectorAll('button').forEach(b => {
       b.onclick = () => { PERF.set(b.dataset.v); paint(); this.toast(T('perfApplied')); };
     });
+    const bseg = document.getElementById('botSeg');
+    const bpaint = () => bseg.querySelectorAll('button').forEach(b =>
+      b.classList.toggle('sel', b.dataset.v === (localStorage.getItem('cp-bots') || '1')));
+    bpaint();
+    bseg.querySelectorAll('button').forEach(b => {
+      b.onclick = () => { try { localStorage.setItem('cp-bots', b.dataset.v); } catch (e) {} bpaint(); };
+    });
+  },
+
+  botsEnabled() { return (localStorage.getItem('cp-bots') || '1') !== '0'; },
+
+  removeBots() {
+    let removed = false;
+    for (const [cid, p] of this.players) if (p.isBot) { this.players.delete(cid); removed = true; }
+    return removed;
+  },
+
+  // fill empty seats with AI opponents so small groups always get a real match
+  spawnBots(def) {
+    if (!this.botsEnabled() || def.noBots || !def.bot) return;
+    const names = T('botNames');
+    const target = Math.max(def.minPlayers, 4);
+    let n = 0;
+    while (this.players.size < Math.min(target, 8)) {
+      const slot = this.freeSlot();
+      if (slot < 0) break;
+      this.players.set('bot:' + (++n) + ':' + slot, {
+        pid: 'bot:' + n + ':' + slot, slot,
+        name: names[slot % names.length], color: COLORS[slot], colorName: COLOR_NAMES[slot],
+        in: { x: 0, y: 0 }, wins: 0, gone: false, spectating: false, cam: null, isBot: true,
+      });
+    }
   },
 
   onReady({ code, modes }) {
@@ -157,7 +192,11 @@ const App = {
 
   onHello(cid, name) {
     if (this.players.has(cid)) return;
-    const slot = this.freeSlot();
+    let slot = this.freeSlot();
+    if (slot < 0) {
+      const bot = [...this.players.values()].find(p => p.isBot);
+      if (bot) { this.players.delete(bot.pid); slot = bot.slot; }
+    }
     if (slot < 0) {
       this.net.sendTo(cid, { t: 'full' });
       setTimeout(() => this.net.kick(cid), 400);
@@ -308,12 +347,16 @@ const App = {
   // ---------- game lifecycle ----------
   startGame(def) {
     if (!def || this.state !== 'lobby') return;
-    const ps = [...this.players.values()];
     const meta = I18N.game(def.id, def);
-    if (ps.length < def.minPlayers) {
+    const real = [...this.players.values()].filter(p => !p.isBot);
+    if (real.length >= 1) this.spawnBots(def);
+    const ps = [...this.players.values()];
+    if (ps.length < def.minPlayers || !real.length) {
+      this.removeBots();
       this.toast(T('needsPlayers', meta.title, def.minPlayers, ps.length));
       return;
     }
+    this.renderPlayers();
     this.game = def;
     this.state = 'count';
     ps.forEach(p => { p.spectating = false; p.in.x = 0; p.in.y = 0; });
@@ -375,11 +418,17 @@ const App = {
       this.G.time += dt;
       Draw2.tick(dt);
       try {
+        if (this.game.bot) {
+          for (const p of this.G.players) if (p.isBot) this.game.bot(p, this.G, dt);
+        }
         this.game.update(dt, this.G);
         if (this.game.draw) {
           const ctx = document.getElementById('gameCanvas').getContext('2d');
+          ctx.save();
+          if (Draw2.shake > 0.5) ctx.translate(rand(-1, 1) * Draw2.shake, rand(-1, 1) * Draw2.shake);
           this.game.draw(ctx, this.G);
           Draw2.drawParts(ctx);
+          ctx.restore();
         }
       } catch (e) {
         console.error(e);
@@ -434,6 +483,7 @@ const App = {
     document.getElementById('stage').classList.remove('active');
     document.getElementById('gameHud').style.display = 'none';
     document.getElementById('lobby').style.display = 'flex';
+    this.removeBots();
     for (const p of this.players.values()) p.spectating = false;
     if (this.net) this.net.broadcast({ t: 'scene', s: 'wait', msg: T('waitingPick') });
     this.renderPlayers();
@@ -456,7 +506,9 @@ const App = {
 // ---------------------------------------------------------------------------
 const Draw2 = {
   parts: [],
-  reset() { this.parts = []; },
+  shake: 0,
+  reset() { this.parts = []; this.shake = 0; },
+  addShake(a) { this.shake = Math.min(14, this.shake + a); },
 
   bg(ctx, G, c1 = '#0a1020', c2 = '#101a33') {
     const g = ctx.createLinearGradient(0, 0, 0, G.H);
@@ -546,6 +598,7 @@ const Draw2 = {
   },
 
   boom(x, y, color, n = 16, speed = 240, life = 0.55, size = 5) {
+    this.addShake(n >= 20 ? 7 : n >= 12 ? 4 : 2);
     if (PERF.low) n = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2), sp = rand(speed * 0.3, speed);
@@ -564,6 +617,7 @@ const Draw2 = {
     this.parts.push({ x, y, vx: rand(-15, 15), vy: rand(-15, 15), life, max: life, color, size });
   },
   tick(dt) {
+    this.shake = Math.max(0, this.shake - dt * 26);
     for (let i = this.parts.length - 1; i >= 0; i--) {
       const p = this.parts[i];
       p.life -= dt;

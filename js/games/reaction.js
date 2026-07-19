@@ -24,6 +24,13 @@ registerGame({
       G.vib(p, 40);
     }
   },
+  bot(p, G, dt) {
+    const S = this.S;
+    if (S.phase !== 'go' || S.taps.has(p.pid) || S.fouls.has(p.pid)) return;
+    if (p.rr !== S.round) { p.rr = S.round; p.rAcc = 0; p.rDelay = rand(0.25, 0.65); }
+    p.rAcc += dt;
+    if (p.rAcc >= p.rDelay) this.onBtn(p, 'tap', G);
+  },
   update(dt, G) {
     const S = this.S;
     S.phaseT -= dt;

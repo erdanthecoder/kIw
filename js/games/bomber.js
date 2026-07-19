@@ -44,6 +44,40 @@ registerGame({
     if (S.bombs.some(bb => bb.gx === nx && bb.gy === ny)) return;
     bp.tx = nx; bp.ty = ny; bp.moveT = 0.16;
   },
+  bot(p, G, dt) {
+    const S = this.S, bp = S.players.get(p.pid);
+    if (!bp || !bp.alive || bp.moveT > 0) return;
+    p.bt = (p.bt || 0) + dt;
+    if (p.bt < 0.3) return;
+    p.bt = 0;
+    const dirs = [['u', 0, -1], ['d', 0, 1], ['l', -1, 0], ['r', 1, 0]];
+    const unsafe = (gx, gy) =>
+      S.bombs.some(b => (b.gx === gx && Math.abs(b.gy - gy) <= b.range) || (b.gy === gy && Math.abs(b.gx - gx) <= b.range)) ||
+      S.blasts.some(bl => bl.gx === gx && bl.gy === gy);
+    const open = dirs.filter(d => {
+      const nx = bp.gx + d[1], ny = bp.gy + d[2];
+      return nx >= 0 && nx < this.COLS && ny >= 0 && ny < this.ROWS &&
+        S.grid[ny][nx] === 0 && !S.bombs.some(b => b.gx === nx && b.gy === ny);
+    });
+    const safeOpen = open.filter(d => !unsafe(bp.gx + d[1], bp.gy + d[2]));
+    if (unsafe(bp.gx, bp.gy)) {
+      const esc2 = safeOpen.length ? safeOpen : open;
+      if (esc2.length) this.onBtn(p, esc2[Math.random() * esc2.length | 0][0], G);
+      return;
+    }
+    const crateAdj = dirs.some(d => {
+      const nx = bp.gx + d[1], ny = bp.gy + d[2];
+      return S.grid[ny] && S.grid[ny][nx] === 2;
+    });
+    if (crateAdj && bp.bombs < bp.maxBombs && safeOpen.length && Math.random() < 0.55) {
+      this.onBtn(p, 'a', G);
+      this.onBtn(p, safeOpen[Math.random() * safeOpen.length | 0][0], G);
+      return;
+    }
+    if (safeOpen.length && Math.random() < 0.85) {
+      this.onBtn(p, safeOpen[Math.random() * safeOpen.length | 0][0], G);
+    }
+  },
   update(dt, G) {
     const S = this.S;
     for (const p of G.players) {

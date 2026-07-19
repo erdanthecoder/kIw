@@ -49,6 +49,20 @@ registerGame({
     const k = this.S.karts.get(p.pid);
     if (k && b === 'a' && k.nitro <= 0 && !k.done) { k.nitro = 3; k.v += 170; G.vib(p, 80); }
   },
+  bot(p, G, dt) {
+    const S = this.S, k = S.karts.get(p.pid);
+    if (!k || k.done) return;
+    const next = this.WP[(k.wp + 1) % this.WP.length];
+    const nn = this.WP[(k.wp + 2) % this.WP.length];
+    const tx = lerp(next[0], nn[0], 0.3), ty = lerp(next[1], nn[1], 0.3);
+    const d = dist(k.x, k.y, tx, ty) || 1;
+    p.in.x = (tx - k.x) / d * 0.92;
+    p.in.y = (ty - k.y) / d * 0.92;
+    const aim = Math.atan2(ty - k.y, tx - k.x);
+    let da = Math.abs(aim - k.a);
+    while (da > Math.PI) da = Math.abs(da - Math.PI * 2);
+    if (k.nitro <= 0 && da < 0.14 && Math.random() < 0.02) this.onBtn(p, 'a', G);
+  },
   update(dt, G) {
     const S = this.S;
     const skidCtx = S.skid.getContext('2d');

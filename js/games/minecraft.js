@@ -3,7 +3,7 @@
 // rotating spectator view and relays positions + block edits between players.
 registerGame({
   id: 'minecraft', title: 'CraftWorld 3D', icon: 'minecraft', desc: 'A shared voxel island. Build & break together in first person on your phone!',
-  players: '1-8', minPlayers: 1, is3d: true,
+  players: '1-8', minPlayers: 1, is3d: true, noBots: true,
   S: null,
   init(G) {
     const seed = Date.now() % 100000 | 0;

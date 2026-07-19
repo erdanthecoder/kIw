@@ -14,6 +14,16 @@ registerGame({
       pipes: [], spawnT: 0, speed: 210, over: false, clouds, hills, scroll: 0,
     };
   },
+  bot(p, G) {
+    const S = this.S, bd = S.birds.get(p.pid);
+    if (!bd || !bd.alive) return;
+    const pipe = S.pipes.find(pp => pp.x + pp.w > 200);
+    const target = pipe ? (pipe.top + pipe.bot) / 2 + 20 : 380;
+    if (bd.y > target + (p.botJitter || 0) && bd.vy > -60) {
+      this.onBtn(p, 'tap', G);
+      p.botJitter = rand(-25, 35);
+    }
+  },
   onBtn(p, b, G) {
     const bd = this.S && this.S.birds.get(p.pid);
     if (bd && bd.alive) { bd.vy = -340; bd.flapT = 0.22; }

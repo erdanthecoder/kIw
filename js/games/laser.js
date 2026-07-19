@@ -69,6 +69,30 @@ registerGame({
       }
     }
   },
+  bot(p, G, dt) {
+    const S = this.S, u = S.units.get(p.pid);
+    if (!u || u.frozen > 0) return;
+    let tgt = null, bd = 1e9;
+    for (const q of G.players) {
+      if (q.pid === p.pid) continue;
+      const o = S.units.get(q.pid);
+      if (!o || o.frozen > 0) continue;
+      const d = dist(u.x, u.y, o.x, o.y);
+      if (d < bd) { bd = d; tgt = o; }
+    }
+    if (!tgt) { p.in.x = 0; p.in.y = 0; return; }
+    const dx = (tgt.x - u.x) / (bd || 1), dy = (tgt.y - u.y) / (bd || 1);
+    const k = bd > 320 ? 1 : bd < 200 ? -0.5 : 0.25;
+    p.bt = (p.bt || 0) + dt;
+    if (p.bt > 0.9) { p.bt = 0; p.jx = rand(-0.5, 0.5); p.jy = rand(-0.5, 0.5); }
+    let fx = dx * k + (p.jx || 0), fy = dy * k + (p.jy || 0);
+    const m = Math.hypot(fx, fy) || 1;
+    p.in.x = fx / m; p.in.y = fy / m;
+    const aim = Math.atan2(dy, dx);
+    let da = Math.abs(aim - u.a);
+    while (da > Math.PI) da = Math.abs(da - Math.PI * 2);
+    if (da < 0.22 && u.cd <= 0 && Math.random() < 0.35) this.onBtn(p, 'a', G);
+  },
   update(dt, G) {
     const S = this.S;
     for (const p of G.players) {

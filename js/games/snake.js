@@ -15,6 +15,30 @@ registerGame({
     for (let k = 0; k < 14; k++) pts.push({ x: x - k * 6, y });
     return { pts, dir: 0, len: 14, best: 14, alive: true, respawn: 0, speed: 150 };
   },
+  bot(p, G, dt) {
+    const S = this.S, s = S.snakes.get(p.pid);
+    if (!s || !s.alive) return;
+    const h = s.pts[0];
+    let best = null, bd = 1e9;
+    for (const f of S.food) {
+      const d = dist(h.x, h.y, f.x, f.y);
+      if (d < bd) { bd = d; best = f; }
+    }
+    let fx = best ? (best.x - h.x) / bd : 1, fy = best ? (best.y - h.y) / bd : 0;
+    // steer away from nearby snake bodies
+    for (const [opid, o] of S.snakes) {
+      if (!o.alive) continue;
+      for (let i = (opid === p.pid ? 10 : 0); i < o.pts.length; i += 4) {
+        const d = dist(h.x, h.y, o.pts[i].x, o.pts[i].y);
+        if (d < 70 && d > 1) { fx -= (o.pts[i].x - h.x) / d * 1.4; fy -= (o.pts[i].y - h.y) / d * 1.4; }
+      }
+    }
+    p.bt = (p.bt || 0) + dt;
+    if (p.bt > 1.4) { p.bt = 0; p.jx = rand(-0.25, 0.25); p.jy = rand(-0.25, 0.25); }
+    fx += p.jx || 0; fy += p.jy || 0;
+    const m = Math.hypot(fx, fy) || 1;
+    p.in.x = fx / m; p.in.y = fy / m;
+  },
   update(dt, G) {
     const S = this.S;
     S.pulse += dt;

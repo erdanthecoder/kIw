@@ -13,6 +13,27 @@ registerGame({
     for (let i = 0; i < 120; i++) S.food.push(this.newFood());
   },
   newFood() { return { x: rand(20, 1260), y: rand(50, 700), r: 5, c: ['#ffcf3f', '#2fe0d0', '#ff7ab8', '#b06cff'][irand(0, 3)] }; },
+  bot(p, G, dt) {
+    const S = this.S, b = S.blobs.get(p.pid);
+    if (!b || b.respawn > 0) return;
+    let fx = 0, fy = 0;
+    for (const q of G.players) {
+      if (q.pid === p.pid) continue;
+      const o = S.blobs.get(q.pid);
+      if (!o || o.respawn > 0) continue;
+      const d = dist(b.x, b.y, o.x, o.y) || 1;
+      if (o.r > b.r * 1.15 && d < 280) { fx -= (o.x - b.x) / d * 2; fy -= (o.y - b.y) / d * 2; }
+      else if (b.r > o.r * 1.2 && d < 320) { fx += (o.x - b.x) / d * 1.5; fy += (o.y - b.y) / d * 1.5; }
+    }
+    let bf = null, bd2 = 1e9;
+    for (const f of S.food) {
+      const d = dist(b.x, b.y, f.x, f.y);
+      if (d < bd2) { bd2 = d; bf = f; }
+    }
+    if (bf) { fx += (bf.x - b.x) / bd2; fy += (bf.y - b.y) / bd2; }
+    const m = Math.hypot(fx, fy) || 1;
+    p.in.x = fx / m; p.in.y = fy / m;
+  },
   update(dt, G) {
     const S = this.S;
     S.t += dt;

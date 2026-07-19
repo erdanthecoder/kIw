@@ -2,7 +2,7 @@
 // on their own device; the console shows a chase-cam of the leader + standings.
 registerGame({
   id: 'obby', title: 'Obby Rush 3D', icon: 'obby', desc: 'Race a 3D obstacle course over lava. Checkpoints, moving platforms, glory.',
-  players: '1-8', minPlayers: 1, TIME: 240, LAST_CALL: 40,
+  players: '1-8', minPlayers: 1, TIME: 240, LAST_CALL: 40, noBots: true,
   S: null,
   init(G) {
     const seed = Date.now() % 100000 | 0;

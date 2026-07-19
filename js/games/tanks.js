@@ -36,6 +36,32 @@ registerGame({
     Draw2.boom(mx, my, '#ffd76b', 6, 120, 0.2, 3);
     S.bullets.push({ x: mx, y: my, vx: Math.cos(t.a) * 430, vy: Math.sin(t.a) * 430, owner: p.pid, bounces: 1, life: 3, px: mx, py: my });
   },
+  bot(p, G, dt) {
+    const S = this.S, t = S.tanks.get(p.pid);
+    if (!t || t.respawn > 0) return;
+    let tgt = null, bd = 1e9;
+    for (const q of G.players) {
+      if (q.pid === p.pid) continue;
+      const o = S.tanks.get(q.pid);
+      if (!o || o.respawn > 0) continue;
+      const d = dist(t.x, t.y, o.x, o.y);
+      if (d < bd) { bd = d; tgt = o; }
+    }
+    // grab the rapid-fire crate when it's closer than the fight
+    if (S.pickup && dist(t.x, t.y, S.pickup.x, S.pickup.y) < 300) tgt = S.pickup;
+    if (!tgt) { p.in.x = 0; p.in.y = 0; return; }
+    const dx = (tgt.x - t.x) / (bd || 1), dy = (tgt.y - t.y) / (bd || 1);
+    const k = bd > 300 ? 1 : bd < 170 ? -0.6 : 0.2;
+    p.bt = (p.bt || 0) + dt;
+    if (p.bt > 0.8) { p.bt = 0; p.jx = rand(-0.55, 0.55); p.jy = rand(-0.55, 0.55); }
+    let fx = dx * k + (p.jx || 0), fy = dy * k + (p.jy || 0);
+    const m = Math.hypot(fx, fy) || 1;
+    p.in.x = fx / m; p.in.y = fy / m;
+    const aim = Math.atan2(dy, dx);
+    let da = Math.abs(aim - t.a);
+    while (da > Math.PI) da = Math.abs(da - Math.PI * 2);
+    if (da < 0.3 && t.cd <= 0 && Math.random() < 0.4) this.onBtn(p, 'a', G);
+  },
   update(dt, G) {
     const S = this.S;
     // rapid-fire crate spawns periodically at a clear spot

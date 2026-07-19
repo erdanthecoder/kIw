@@ -43,6 +43,22 @@ registerGame({
       G.vib(p, 60);
     }
   },
+  bot(p, G, dt) {
+    const S = this.S, c = S.cars.get(p.pid);
+    if (!c) return;
+    if (S.resetT > 0) { p.in.x = 0; p.in.y = 0; return; }
+    let b = S.balls[0], bd = 1e9;
+    for (const bb of S.balls) {
+      const d = dist(c.x, c.y, bb.x, bb.y);
+      if (d < bd) { bd = d; b = bb; }
+    }
+    const goalX = c.team === 0 ? this.F.x2 : this.F.x1;
+    const ang = Math.atan2(b.y - (this.GT + this.GB) / 2, b.x - goalX);
+    const px = b.x + Math.cos(ang) * 34, py = b.y + Math.sin(ang) * 34;
+    const d = dist(c.x, c.y, px, py) || 1;
+    p.in.x = (px - c.x) / d; p.in.y = (py - c.y) / d;
+    if (c.boost <= 0 && bd < 220 && Math.random() < 0.025) this.onBtn(p, 'a', G);
+  },
   resetKickoff(S, G) {
     S.balls = [this.newBall()];
     if (S.overtime) S.balls.push(Object.assign(this.newBall(), { y: 300 }));

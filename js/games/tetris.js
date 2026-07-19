@@ -105,6 +105,25 @@ registerGame({
       this.lock(board, p.pid, G);
     }
   },
+  bot(p, G, dt) {
+    const board = this.S.boards.get(p.pid);
+    if (!board || !board.alive) return;
+    p.tAcc = (p.tAcc || 0) + dt;
+    if (p.tAcc < 0.32) return;
+    p.tAcc = 0;
+    // drift toward the currently lowest column
+    let bestX = 0, bestH = -1;
+    for (let x = 0; x < 10; x++) {
+      let h = 0;
+      while (h < 20 && !board.grid[h][x]) h++;
+      if (h > bestH) { bestH = h; bestX = x; }
+    }
+    const r = Math.random();
+    if (board.piece.x < bestX - 1 && r < 0.75) this.onBtn(p, 'R', G);
+    else if (board.piece.x > bestX && r < 0.75) this.onBtn(p, 'L', G);
+    else if (r < 0.55) this.onBtn(p, 'ROT', G);
+    else this.onBtn(p, 'SD', G);
+  },
   update(dt, G) {
     const S = this.S;
     for (const p of G.players) {
